@@ -876,7 +876,7 @@ function seed(){
   save(K.plan, [
     {id:uid(), tpl:"规划", name:"监理规划", proj:p0, author:"", date:"2026-07-10", status:"已审批"},
     {id:uid(), tpl:"细则", name:"主体结构钢筋工程监理实施细则", proj:p0, author:"", date:"2026-07-15", status:"已审批"},
-    {id:uid(), tpl:"旁站", name:"混凝土浇筑旁站方案", proj:p0, author:"", date:"2026-07-15", status:"编写中"}
+    {id:uid(), tpl:"细则", name:"混凝土浇筑旁站方案", proj:p0, author:"", date:"2026-07-15", status:"编写中"}
   ]);
   save(K.accept, [
     {id:uid(), item:"1#楼基础分部工程", proj:p0, date:"2026-08-05", group:"预验收", result:"通过", note:"参与：建设/施工/监理/设计，资料齐全"},
@@ -2526,9 +2526,12 @@ const PLAN_TEMPLATES_BUILTIN = [
 ];
 const PLAN_STATUSES = ["未编制","编写中","已审批"];
 function getPlanTemplates(){
+  // 分类固定为内置5项；若本地存储有旧分类数据，强制覆盖修正
   const list = load(K.planTpl, null);
-  if(list===null){ save(K.planTpl, PLAN_TEMPLATES_BUILTIN); return PLAN_TEMPLATES_BUILTIN.slice(); }
-  return list;
+  const built = PLAN_TEMPLATES_BUILTIN.slice();
+  const needsReset = !Array.isArray(list) || list.length!==built.length || !built.every((b,i)=>list[i]&&list[i].key===b.key);
+  if(needsReset){ save(K.planTpl, built); }
+  return built;
 }
 function savePlanTemplates(list){ save(K.planTpl, list); }
 function planStatusPill(s){

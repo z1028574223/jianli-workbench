@@ -1,14 +1,14 @@
 {
   "name": "jianli-workbench",
   "version": "1.0.0",
-  "description": "工地监理总控工作台（本地版）—— 纯前端监理业务管理，数据存本地目录",
+  "description": "监理总控工作台（本地版）—— 纯前端监理业务管理，数据存本地目录",
   "main": "main.js",
   "author": "北星小学项目监理部",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --win dir",
-    "dist": "electron-builder --win portable",
+    "dist": "node build.js",
     "dist:nsi": "electron-builder --win nsis"
   },
   "devDependencies": {
@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.jianli.workbench",
-    "productName": "工地监理总控工作台",
+    "productName": "监理总控工作台",
     "directories": {
       "output": "dist"
     },
@@ -33,12 +33,12 @@
           "arch": ["x64"]
         }
       ],
-      "artifactName": "工地监理总控工作台-${version}-便携版.${ext}",
+      "artifactName": "监理总控工作台-v${version}.${ext}",
       "requestedExecutionLevel": "asInvoker",
       "signAndEditExecutable": false
     },
     "portable": {
-      "artifactName": "工地监理总控工作台-${version}-便携版.${ext}"
+      "artifactName": "监理总控工作台-v${version}.${ext}"
     }
   }
 }

@@ -87,4 +87,4 @@ npm run dist          # 产出 dist/工地监理总控工作台-1.0.0-便携版.
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 北星小学项目监理部
+[MIT](LICENSE) © 2026 ZGX

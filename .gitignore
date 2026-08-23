@@ -1,0 +1,34 @@
+# ===== 工地监理总控工作台（桌面便携版）仓库忽略规则 =====
+
+# 依赖（electron / electron-builder 等，体积大，install 即可恢复）
+node_modules/
+
+# 构建产物 / 打包输出
+# dist/ 为 electron-builder 中间与最终输出；dist_release/ 含便携版 exe
+# exe 通过 GitHub Releases 发布，不进代码树
+dist/
+dist_release/
+build/
+release/
+win-unpacked/
+*.exe
+
+# 备份文件（开发过程留痕，非源码）
+*_备份_*.html
+*_备份_*.js
+
+# 网页版相关（本仓库只收录桌面版，剔除网页端文件）
+inline_echarts.js
+mammoth.browser.min.js
+*.bat
+
+# 运行时进程 id
+*.pid
+
+# 本地数据目录（用户运行时生成，含业务 JSON）
+data/
+
+# 编辑器 / 系统临时
+.DS_Store
+Thumbs.db
+*.tmp

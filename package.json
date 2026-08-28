@@ -35,7 +35,7 @@
           "arch": ["x64"]
         }
       ],
-      "artifactName": "监理总控工作台-v${version}-setup.${ext}",
+      "artifactName": "jianli-workbench-v${version}-setup.${ext}",
       "requestedExecutionLevel": "asInvoker",
       "signAndEditExecutable": false
     },

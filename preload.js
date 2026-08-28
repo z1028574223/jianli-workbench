@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('fsBridge', {
   openDataDir: () => ipcRenderer.sendSync('data:openDir'),
   // 直接生成 DOCX（type: 'notice' | 'form'，payload 为脚本输入数据，outDir 输出目录，baseName 文件名前缀）
   generateDocx: (type, payload, outDir, baseName) => ipcRenderer.invoke('docx:generate', { type, payload, outDir, baseName }),
+  // AI 对话代理（config: {baseURL, model, apiKey, temperature, systemPrompt, messages}）
+  aiChat: (config) => ipcRenderer.invoke('ai:chat', config),
   // 菜单触发的目录已更换通知
   onDirChanged: (cb) => ipcRenderer.on('dir:changed', (e, dir) => cb && cb(dir))
 });

@@ -6,6 +6,9 @@ const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron')
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const http = require('http');
+const https = require('https');
+const { URL } = require('url');
 
 // ---------- 数据目录管理 ----------
 const SETTINGS_FILE = () => path.join(app.getPath('userData'), 'settings.json');
@@ -118,6 +121,50 @@ ipcMain.on('data:openDir', (event) => {
   try { shell.openPath(getDataDir()); } catch (e) { console.error(e); }
 });
 
+// ---------- AI 助手代理（通过主进程转发，避免前端暴露 API Key 和跨域问题） ----------
+ipcMain.handle('ai:chat', async (event, { baseURL, model, apiKey, temperature, systemPrompt, messages }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const url = new URL('/chat/completions', baseURL);
+      const body = JSON.stringify({
+        model,
+        messages: systemPrompt ? [{ role: 'system', content: systemPrompt }, ...messages] : messages,
+        temperature: typeof temperature === 'number' ? temperature : 0.7,
+        stream: false
+      });
+      const mod = url.protocol === 'https:' ? https : http;
+      const req = mod.request(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey,
+          'Content-Length': Buffer.byteLength(body)
+        },
+        timeout: 90000
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => {
+          try {
+            if (res.statusCode < 200 || res.statusCode >= 300) {
+              return reject(new Error('HTTP ' + res.statusCode + ': ' + data.slice(0, 300)));
+            }
+            const json = JSON.parse(data);
+            if (json.error) {
+              return reject(new Error(json.error.message || JSON.stringify(json.error)));
+            }
+            resolve(json.choices?.[0]?.message?.content || '（AI 无返回）');
+          } catch (e) { reject(e); }
+        });
+      });
+      req.on('error', (err) => reject(err));
+      req.on('timeout', () => { req.destroy(); reject(new Error('请求超时')); });
+      req.write(body);
+      req.end();
+    } catch (e) { reject(e); }
+  });
+});
+
 // ---------- DOCX 生成（直接调用本地 Python，不再依赖手动下载 input.json） ----------
 const PYTHON_EXE = 'C:\\Users\\ZGX\\.workbuddy\\binaries\\python\\envs\\default\\Scripts\\python.exe';
 const DOCX_SKILL_DIR = 'C:\\Users\\ZGX\\.workbuddy\\skills\\jianli-tongzhidan-docx__skillhub';
@@ -136,7 +183,9 @@ ipcMain.handle('docx:generate', async (event, { type, payload, outDir, baseName 
     const safeBase = String(baseName).replace(/[\\/:*?"<>|]/g, '_');
     const inputPath = path.join(outDir, safeBase + '.input.json');
     const outPath = path.join(outDir, safeBase + '.docx');
-    const scriptName = type === 'form' ? 'gen_supervise_form.py' : 'generate_jianli_docx.py';
+    const scriptName = type === 'monthly' ? 'gen_monthly_report.py'
+      : type === 'form' ? 'gen_supervise_form.py'
+      : 'generate_jianli_docx.py';
     const scriptPath = path.join(DOCX_SKILL_DIR, 'scripts', scriptName);
 
     if (!fs.existsSync(PYTHON_EXE)) {

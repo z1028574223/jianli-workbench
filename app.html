@@ -114,7 +114,7 @@
   .nav-item svg{width:18px;height:18px;flex-shrink:0; color:var(--ink-3); transition:color .15s ease;}
   .nav-item:hover{background:var(--panel-2); color:var(--ink-1); border-color:var(--border); transform:translateX(2px);}
   .nav-item:hover svg{color:var(--accent);}
-  .nav-item:focus-visible{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--glow);}
+  .nav-item:focus-visible{outline:none; border-color:var(--accent); box-shadow:0 0 0 2px var(--glow);}
   .nav-item.active{background:linear-gradient(135deg,#533afd,#7c5cff); color:#fff; font-weight:600; border-color:transparent; box-shadow:0 8px 22px rgba(83,58,253,.32);}
   .nav-item.active svg{color:#fff;}
   .main{flex:1; padding:24px 26px 48px; min-width:0; height:calc(100vh - 62px); overflow-y:auto; overscroll-behavior-y:contain; scrollbar-width:none; -ms-overflow-style:none;}
@@ -138,7 +138,7 @@
     cursor:pointer; min-height:40px; white-space:nowrap; font-weight:600; transition:background .15s ease, transform .1s ease;}
   .ti-do:hover{background:var(--accent-d);}
   .ti-do:active{transform:scale(.97);}
-  .ti-do:focus-visible{outline:none; box-shadow:0 0 0 3px var(--glow);}
+  .ti-do:focus-visible{outline:none; box-shadow:0 0 0 2px var(--glow);}
   .ti-do.overdue{background:var(--down);}
   .ti-do.overdue:hover{background:#9b1717;}
   .ti-acts{display:flex; gap:8px; flex-shrink:0;}
@@ -162,13 +162,16 @@
   .card{background:var(--panel-1); border:1px solid var(--border); border-radius:var(--r); padding:18px;
     box-shadow:var(--shadow-card); margin-bottom:18px; transition:box-shadow .22s ease, border-color .22s ease, transform .15s ease;}
   .card:hover{box-shadow:var(--shadow-lg); border-color:var(--border-soft); transform:translateY(-2px);}
+  .card:focus-visible,.proj:focus-visible{outline:none; box-shadow:0 0 0 2px var(--glow);}
+  .arrow{display:inline-block; transition:transform .18s ease;}
+  .arrow:hover,.link:hover .arrow{transform:translateX(3px);}
   .grid{display:grid; gap:20px;}
   .grid-2{grid-template-columns:repeat(2,1fr);}
   .grid-3{grid-template-columns:repeat(3,1fr);}
   .grid-4{grid-template-columns:repeat(4,1fr);}
   .proj{background:var(--panel-1); border:1px solid var(--border); border-radius:var(--r-sm); padding:15px; position:relative;
-    transition:box-shadow .18s ease, border-color .18s ease, transform .12s ease;}
-  .proj:hover{box-shadow:var(--shadow-lg); border-color:var(--border-soft); transform:translateY(-1px);}
+    transition:box-shadow .18s ease, border-color .18s ease, transform .15s ease, background .15s ease;}
+  .proj:hover{box-shadow:var(--shadow-lg); border-color:var(--border-soft); background:var(--panel-2); transform:translateX(3px);}
   .proj h3{margin:0 0 6px; font-size:15.5px; color:var(--ink-1);}
   .proj .pcode{font-size:12px; color:var(--ink-3);}
   .proj-list{margin:10px 0; max-height:240px; overflow:auto;}
@@ -199,7 +202,7 @@
   .btn svg{width:17px;height:17px;}
   .btn:hover{background:linear-gradient(135deg,var(--accent-d),var(--accent)); box-shadow:0 6px 20px rgba(83,58,253,.32); transform:translateY(-1px);}
   .btn:active{transform:scale(.97) translateY(0);}
-  .btn:focus-visible{outline:none; box-shadow:0 0 0 3px var(--glow);}
+  .btn:focus-visible{outline:none; box-shadow:0 0 0 2px var(--glow);}
   .btn:disabled,.btn[disabled]{opacity:.5; cursor:not-allowed; pointer-events:none;}
   .btn.ghost{background:var(--panel-1); color:var(--accent-d); border:1px solid var(--border-soft); box-shadow:none;}
   .btn.ghost:hover{background:var(--accent-soft); box-shadow:0 2px 8px rgba(83,58,253,.10); border-color:var(--accent); transform:translateY(-1px);}
@@ -217,11 +220,12 @@
     transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;}
   .field input:hover,.field select:hover,.field textarea:hover{border-color:var(--border-soft);}
   .field textarea{resize:vertical; min-height:78px;}
-  .field input:focus,.field select:focus,.field textarea:focus{outline:none; border-color:var(--accent); background:var(--panel-1); box-shadow:0 0 0 3px var(--glow);}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none; border-color:var(--accent); background:var(--panel-1); box-shadow:0 0 0 2px var(--glow);}
   .field.half{display:inline-block; width:48%; margin-right:2%;}
-  .modal-mask{position:fixed; inset:0; background:rgba(16,36,43,.5); z-index:100; display:none;
-    align-items:flex-start; justify-content:center; padding:24px 14px; overflow:auto; backdrop-filter:blur(3px);}
-  .modal-mask.show{display:flex;}
+  .modal-mask{position:fixed; inset:0; background:rgba(16,36,43,.5); z-index:100; display:none; opacity:0;
+    align-items:flex-start; justify-content:center; padding:24px 14px; overflow:auto; backdrop-filter:blur(3px);
+    transition:opacity .2s ease;}
+  .modal-mask.show{display:flex; opacity:1;}
   .modal{background:var(--panel-1); border:1px solid var(--border); border-radius:var(--r); width:100%; max-width:560px; padding:24px;
     box-shadow:var(--shadow-lg); animation:modalIn .22s ease;}
   @keyframes modalIn{from{opacity:0; transform:translateY(10px) scale(.98);} to{opacity:1; transform:none;}}
@@ -386,6 +390,69 @@
   .cp-today .todo.red{ border-color:#fecaca; background:linear-gradient(180deg,#fff,#fff1f1); }
   .cp-today .todo.red b{ color:var(--red); }
 
+  /* ---- 新版总览仪表盘（截图4布局） ---- */
+  .ov-top-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px; }
+  .ov-top-stats .stat-card{
+    border:1px solid transparent; border-radius:var(--r); padding:18px 20px; box-shadow:var(--shadow-card);
+    background:linear-gradient(var(--panel-1),var(--panel-1)) padding-box,
+               linear-gradient(135deg, var(--border), var(--border)) border-box;
+    transition:transform .18s ease, box-shadow .18s ease, background .25s ease; }
+  .ov-top-stats .stat-card:hover{
+    background:linear-gradient(var(--panel-1),var(--panel-1)) padding-box,
+               linear-gradient(135deg, var(--accent), var(--accent-2)) border-box;
+    transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+  .ov-top-stats .stat-label{ font-size:12.5px; color:var(--ink-3); margin-bottom:8px; }
+  .ov-top-stats .stat-value{ font-size:30px; font-weight:800; color:var(--ink-1); line-height:1; }
+  .ov-top-stats .stat-delta{ font-size:12px; margin-top:8px; font-weight:600; }
+  .ov-top-stats .stat-delta.up{ color:var(--green); }
+  .ov-top-stats .stat-delta.down{ color:var(--red); }
+
+  .ov-ring-row{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-bottom:22px; }
+  .ov-ring-row .ring-card{
+    border:1px solid transparent; border-radius:var(--r); padding:22px 24px; box-shadow:var(--shadow-card); display:flex; align-items:center; gap:24px;
+    background:linear-gradient(var(--panel-1),var(--panel-1)) padding-box,
+               linear-gradient(135deg, var(--border), var(--border)) border-box;
+    transition:transform .18s ease, box-shadow .18s ease, background .25s ease; }
+  .ov-ring-row .ring-card:hover{
+    background:linear-gradient(var(--panel-1),var(--panel-1)) padding-box,
+               linear-gradient(135deg, var(--accent), var(--accent-2)) border-box;
+    transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+  .ov-ring-row .ring-chart{ width:140px; height:140px; flex-shrink:0; }
+  .ov-ring-row .ring-info{ flex:1; }
+  .ov-ring-row .ring-title{ font-size:15px; font-weight:700; color:var(--ink-1); margin-bottom:10px; }
+  .ov-ring-row .ring-value{ font-size:32px; font-weight:800; margin-bottom:4px; }
+  .ov-ring-row .ring-desc{ font-size:12.5px; color:var(--ink-3); line-height:1.6; }
+  .ov-ring-row .ring-meta{ display:flex; flex-direction:column; gap:4px; margin-top:10px; font-size:12px; color:var(--ink-3); }
+  .ov-ring-row .ring-meta b{ color:var(--ink-1); font-weight:700; }
+
+  .ov-pending{ background:var(--panel-1); border:1px solid var(--border); border-radius:var(--r); padding:20px 24px; box-shadow:var(--shadow-card); }
+  .ov-pending-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .ov-pending-header h4{ margin:0; font-size:15px; font-weight:700; color:var(--ink-1); }
+  .ov-pending-header .sub{ font-size:12px; color:var(--ink-3); }
+  .ov-pending-list{ display:flex; flex-direction:column; gap:10px; }
+  .ov-pending-item{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--r-sm); border:1px solid var(--border); background:var(--bg); transition:background .15s ease, transform .15s ease, box-shadow .15s ease; }
+  .ov-pending-item:hover{ background:var(--panel-2); transform:translateX(4px); box-shadow:0 4px 14px rgba(15,27,45,.07); }
+  .ov-pending-item .bar{ width:4px; height:40px; border-radius:4px; flex-shrink:0; }
+  .ov-pending-item .body{ flex:1; min-width:0; }
+  .ov-pending-item .title{ font-size:13.5px; font-weight:700; color:var(--ink-1); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ov-pending-item .meta{ font-size:12px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ov-pending-item .actions{ display:flex; gap:8px; flex-shrink:0; }
+  .ov-pending-item .actions button{ font-size:12px; padding:5px 12px; }
+
+  @media(max-width:980px){
+    .ov-top-stats{ grid-template-columns:repeat(2,1fr); }
+    .ov-ring-row{ grid-template-columns:1fr; }
+    .ov-pending-item{ flex-wrap:wrap; }
+    .ov-pending-item .actions{ width:100%; justify-content:flex-end; margin-top:6px; }
+  }
+  @media(max-width:640px){
+    .ov-top-stats{ grid-template-columns:1fr 1fr; gap:10px; }
+    .ov-top-stats .stat-card{ padding:14px; }
+    .ov-top-stats .stat-value{ font-size:24px; }
+    .ov-ring-row .ring-card{ flex-direction:column; align-items:flex-start; gap:16px; }
+    .ov-ring-row .ring-chart{ width:120px; height:120px; }
+  }
+
   .cp-units{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:24px; }
   .cp-units .cu{ background:var(--panel-1); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; cursor:pointer; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; box-shadow:var(--shadow-card); }
   .cp-units .cu:hover{ transform:translateY(-3px); border-color:var(--accent); box-shadow:var(--shadow-lg); }
@@ -548,6 +615,129 @@
     .mesh-bg .m{ animation:none !important; }
     .reveal{ opacity:1 !important; transform:none !important; }
   }
+
+  /* ===== 交互动效层（确认 / 删除 / 高亮 / 浮动 / 悬浮） ===== */
+  :root{ --ease-spring:cubic-bezier(.34,1.56,.64,1); }
+
+  /* 确认弹窗：弹簧入场 + 确认按钮成功脉冲 */
+  .modal-mask.show .modal.confirm-modal{ animation:confirmPop .34s var(--ease-spring); }
+  @keyframes confirmPop{ 0%{opacity:0; transform:translateY(16px) scale(.92);} 60%{transform:translateY(0) scale(1.02);} 100%{opacity:1; transform:none;} }
+  .confirm-modal .btn.confirm-yes{ position:relative; overflow:hidden; }
+  .confirm-modal .btn.confirm-yes.pulsing{ animation:confirmPulse .5s ease; }
+  @keyframes confirmPulse{ 0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);} 100%{box-shadow:0 0 0 18px rgba(34,197,94,0);} }
+
+  /* ① 确认条：从右侧平滑滑入（覆盖在行右侧，不挤动整行） */
+  .row-confirm{ position:fixed; z-index:120; min-width:196px; max-width:300px;
+    background:var(--panel-1); border:1px solid var(--border); border-left:3px solid var(--down);
+    border-radius:var(--r-sm); box-shadow:var(--shadow-lg); padding:9px 11px;
+    display:flex; align-items:center; gap:8px;
+    opacity:0; transform:translateX(120%);
+    transition:transform .32s var(--ease-spring), opacity .25s ease; }
+  .row-confirm.show{ opacity:1; transform:translateX(0); }
+  .row-confirm .rc-text{ font-size:13px; color:var(--ink-1); flex:1; line-height:1.3; }
+  .row-confirm button{ font-size:12px; padding:6px 11px; min-height:34px; }
+
+  /* ① 主按钮白色光泽 sweep（去处理 / 提交 / 保存 确认反馈） */
+  .btn.sweep::after, .ti-do.sweep::after{ content:''; position:absolute; top:0; left:-60%;
+    width:55%; height:100%; pointer-events:none;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.6), transparent);
+    transform:skewX(-18deg); animation:sweepFx .7s ease; }
+  @keyframes sweepFx{ from{ left:-60%; } to{ left:150%; } }
+
+  /* ② 删除：行先 shake 抖动提示危险，再塌陷淡出移除 */
+  .shake{ animation:shakeRow .42s ease; }
+  @keyframes shakeRow{ 0%,100%{transform:translateX(0);} 12%{transform:translateX(-9px);} 26%{transform:translateX(8px);}
+    40%{transform:translateX(-6px);} 54%{transform:translateX(5px);} 70%{transform:translateX(-3px);} 86%{transform:translateX(2px);} }
+  /* 块级容器：塌陷 + 淡出 */
+  .removing{ pointer-events:none; overflow:hidden; opacity:0; transform:translateX(22px) scale(.97);
+    max-height:0 !important; margin-top:0 !important; margin-bottom:0 !important;
+    padding-top:0 !important; padding-bottom:0 !important; border-width:0 !important;
+    transition:opacity .28s ease, transform .3s var(--ease-expo), max-height .34s var(--ease-expo),
+      padding .3s ease, margin .3s ease, border-width .3s ease; }
+  /* 表格行：transform/opacity 不支持，用关键帧淡出右移 */
+  .removing-tr{ pointer-events:none; animation:rowOut .32s var(--ease-expo) forwards; }
+  @keyframes rowOut{ 0%{opacity:1; transform:translateX(0) scale(1);} 100%{opacity:0; transform:translateX(26px) scale(.94);} }
+
+  /* ③ 高亮：新增 / 更新 / 跳转记录闪现；侧栏模块脉冲 */
+  .flash{ animation:flashHi 1.4s ease-out; }
+  @keyframes flashHi{ 0%{box-shadow:0 0 0 2px var(--accent) inset, 0 0 18px 2px var(--glow); background:var(--accent-soft);} 100%{box-shadow:0 0 0 0 var(--accent) inset, 0 0 0 0 transparent; background:transparent;} }
+  .nav-item.pulse{ animation:navPulse 1.25s ease; }
+  @keyframes navPulse{ 0%{box-shadow:0 0 0 0 var(--glow); background:var(--accent-soft);}
+    45%{box-shadow:0 0 0 12px rgba(83,58,253,0); background:linear-gradient(135deg,#6f5bff,#8b6dff); color:#fff;}
+    100%{box-shadow:0 0 0 0 transparent;} }
+  /* ③ 跳转高亮：去处理后侧栏模块持续常亮（替代原 1.2s 脉冲消失） */
+  .nav-item.jump{ background:linear-gradient(135deg,#533afd,#7c5cff) !important; color:#fff !important; font-weight:700; border-color:transparent;
+    box-shadow:0 0 0 3px var(--glow), 0 10px 26px rgba(83,58,253,.45); position:relative; }
+  .nav-item.jump svg{ color:#fff !important; }
+  .nav-item.jump::after{ content:'↪ 已跳转'; position:absolute; right:9px; top:50%; transform:translateY(-50%);
+    font-size:10.5px; font-weight:600; color:rgba(255,255,255,.92); background:rgba(255,255,255,.2);
+    padding:2px 7px; border-radius:8px; letter-spacing:.3px; pointer-events:none; white-space:nowrap; }
+
+  /* 悬浮：按钮 / 导航 / 标签 水波纹 */
+  .btn, .nav-item, .chip, .sm-tab, .ti-do{ position:relative; overflow:hidden; }
+  .ripple{ position:absolute; border-radius:50%; transform:scale(0); background:rgba(255,255,255,.5); pointer-events:none; animation:rippleAnim .6s ease-out; }
+  @keyframes rippleAnim{ to{ transform:scale(2.6); opacity:0; } }
+
+  /* ④ 浮动：新建台账 FAB（空闲上下浮动，悬停暂停） */
+  .fab-add{ position:fixed; right:22px; bottom:82px; width:52px; height:52px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 10px 28px rgba(83,58,253,.42);
+    z-index:90; opacity:0; transform:translateY(12px) scale(.6); pointer-events:none; font-size:26px; line-height:1;
+    transition:opacity .3s ease, transform .3s var(--ease-spring); }
+  .fab-add.show{ opacity:1; transform:none; pointer-events:auto; animation:fabBob 2.6s ease-in-out infinite; }
+  .fab-add:hover{ animation-play-state:paused; transform:translateY(-2px) scale(1.05); filter:brightness(1.06); }
+  .fab-add:active{ transform:scale(.9); }
+  @keyframes fabBob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+
+  /* ④ 浮动：返回顶部 FAB（滚动>420px 淡入上浮） */
+  .fab-top{ position:fixed; right:22px; bottom:24px; width:46px; height:46px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 10px 28px rgba(83,58,253,.4);
+    z-index:90; opacity:0; transform:translateY(16px) scale(.8); pointer-events:none;
+    transition:opacity .3s ease, transform .3s var(--ease-spring); font-size:20px; line-height:1; }
+  .fab-top.show{ opacity:1; transform:none; pointer-events:auto; }
+  .fab-top:hover{ filter:brightness(1.06); transform:translateY(-2px); }
+  .fab-top:active{ transform:scale(.92); }
+
+  /* 弹窗淡出退场 */
+  .modal-mask.closing{ display:flex; opacity:0; }
+
+  /* ⑤ 悬浮：KPI 顶部高亮线从左滑出 */
+  .cp-kpi .kpi::after{ content:''; position:absolute; top:0; left:0; height:3px; width:100%;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:var(--r) var(--r) 0 0;
+    transform:scaleX(0); transform-origin:left; transition:transform .32s var(--ease-expo); }
+  .cp-kpi .kpi:hover::after{ transform:scaleX(1); }
+
+  /* ⑤ 悬浮细化：工程情况行 / 实时动态项 / 链接·箭头·卡片 按压反馈 */
+  /* 工程情况每行：悬停高亮底色 + 微缩进 */
+  .proj-row{ transition:transform .2s var(--ease-expo), background .2s ease, border-color .2s ease, box-shadow .2s ease; }
+  .proj-row:hover{ background:var(--accent-soft); border-color:var(--accent); transform:translateX(6px); box-shadow:0 8px 22px rgba(83,58,253,.18); }
+  /* 实时动态每条：悬停左强调条高亮 + 右移（不覆盖逾期/已处理状态底色） */
+  .today-item{ transition:transform .2s var(--ease-expo), border-color .2s ease, box-shadow .2s ease; }
+  .today-item:hover{ transform:translateX(5px); border-color:var(--accent); box-shadow:inset 3px 0 0 var(--accent), 0 8px 22px rgba(83,58,253,.16); }
+  /* 链接 / 箭头：补全按压回缩反馈（悬停位移已在基础层） */
+  .link{ transition:color .18s ease; }
+  .link:active, .arrow:active{ transform:scale(.92); }
+  /* 卡片：可点击卡片按压轻微回缩，呼应悬停抬升 */
+  .card:active, .cp-grid .cp-card:active, .cp-units .cu:active, .cp-today .todo:active, .sm-item:active, .proj:active{ transform:translateY(-1px) scale(.992); }
+
+  @media (prefers-reduced-motion: reduce){
+    .modal-mask.show .modal.confirm-modal{ animation:none !important; }
+    .removing{ transition:none !important; opacity:0; max-height:0; }
+    .removing-tr{ animation:none !important; opacity:0; }
+    .flash{ animation:none !important; }
+    .nav-item.pulse{ animation:none !important; }
+    .ripple{ display:none !important; }
+    .fab-top, .fab-add{ transition:none !important; animation:none !important; }
+    .btn.sweep::after, .ti-do.sweep::after{ display:none !important; }
+    .row-confirm{ transition:none !important; }
+    .shake{ animation:none !important; }
+    .cp-kpi .kpi::after{ display:none !important; }
+    .cp-kpi .kpi:hover{ transform:none; }
+    .proj-row:hover, .today-item:hover{ transform:none !important; }
+    .card:active, .cp-grid .cp-card:active, .cp-units .cu:active, .cp-today .todo:active, .sm-item:active, .proj:active{ transform:none !important; }
+    .link:active, .arrow:active{ transform:none !important; }
+  }
 </style>
 <!-- mammoth.js 用于浏览器端解析 docx 文本（离线可用） -->
 <script>
@@ -610,11 +800,14 @@ window.mammothReady = new Promise(function(resolve){
     <div class="nav-item" data-page="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6l4 2"/><circle cx="12" cy="14" r="8"/></svg>今日待处理</div>
     <div class="nav-group">项目基础</div>
     <div class="nav-item" data-page="units"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>参建单位</div>
-    <div class="nav-group">监理实施</div>
+    <div class="nav-group">现场监理</div>
     <div class="nav-item" data-page="inspect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z"/><path d="M21 21l-4.3-4.3"/></svg>巡视检查</div>
-    <div class="nav-item" data-page="side"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>旁站监理</div>
-    <div class="nav-item" data-page="sample"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>见证取样</div>
+    <div class="nav-item" data-page="side"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>旁站记录</div>
+    <div class="nav-item" data-page="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>检查验收</div>
     <div class="nav-item" data-page="material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>材料进场</div>
+    <div class="nav-item" data-page="machine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>机械设备</div>
+    <div class="nav-item" data-page="sample"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>见证取样</div>
+    <div class="nav-item" data-page="special"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>特种作业</div>
     <div class="nav-group">控制与资料</div>
     <div class="nav-item" data-page="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>进度对比</div>
     <div class="nav-item" data-page="invest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>投资监理</div>
@@ -623,10 +816,12 @@ window.mammothReady = new Promise(function(resolve){
     <div class="nav-item" data-page="monthly"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>监理月报</div>
     <div class="nav-item" data-page="meeting"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>例会纪要</div>
     <div class="nav-item" data-page="notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 11v6M9 14h6"/></svg>监理通知单</div>
-    <div class="nav-item" data-page="contact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>监理联系单</div>
+    <div class="nav-item" data-page="contact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>工作联系单</div>
     <div class="nav-item" data-page="letter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>来往函件</div>
-    <div class="nav-item" data-page="accept"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>验收记录</div>
+    <div class="nav-item" data-page="scheme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 12h8M8 16h5"/></svg>方案审查</div>
     <div class="nav-item" data-page="forms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l2 2h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5z"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg>监理用表</div>
+    <div class="nav-group">AI助手</div>
+    <div class="nav-item" data-page="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>AI助手</div>
   </aside>
 
   <main class="main" id="main"></main>
@@ -636,12 +831,14 @@ window.mammothReady = new Promise(function(resolve){
   <div class="tb active" data-page="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z"/></svg>总览</div>
   <div class="tb" data-page="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6l4 2"/><circle cx="12" cy="14" r="8"/></svg>今日</div>
   <div class="tb" data-page="inspect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z"/><path d="M21 21l-4.3-4.3"/></svg>巡查</div>
-  <div class="tb" data-page="side"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>旁站</div>
+  <div class="tb" data-page="side"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>旁站记录</div>
   <div class="tb" data-page="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>日志</div>
 </nav>
 
 <div class="modal-mask" id="mask"><div class="modal" id="modalBox"></div></div>
 <div class="toast" id="toast"></div>
+<button class="fab-add" id="fabAdd" title="新建台账" aria-label="新建台账">+</button>
+<button class="fab-top" id="fabTop" title="返回顶部" aria-label="返回顶部">&#8593;</button>
 
 <!-- 内联 ECharts 5.5.0（完全离线） -->
 <!-- 内联 ECharts 5.5.0（完全离线） -->
@@ -751,7 +948,9 @@ const K = { proj:PREFIX+"projects", insp:PREFIX+"inspects", side:PREFIX+"sides",
   contract:PREFIX+"contracts", log:PREFIX+"logs", role:PREFIX+"role", cleared:PREFIX+"clearedDemo",
   plan:PREFIX+"plans", accept:PREFIX+"accepts", meeting:PREFIX+"meetings", letter:PREFIX+"letters", tmpl:PREFIX+"log_templates",
   notice:PREFIX+"notices", ncfg:PREFIX+"notice_cfg", form:PREFIX+"form_records", units:PREFIX+"units",
-  contractTotal:PREFIX+"contract_total", todoState:PREFIX+"todo_state", todoGo:PREFIX+"todo_go", planTpl:PREFIX+"plan_templates" };
+  contractTotal:PREFIX+"contract_total", todoState:PREFIX+"todo_state", todoGo:PREFIX+"todo_go", planTpl:PREFIX+"plan_templates",
+  check:PREFIX+"checks", machine:PREFIX+"machines", special:PREFIX+"specials", scheme:PREFIX+"schemes",
+  aiConfig:PREFIX+"ai_config", aiHistory:PREFIX+"ai_history" };
 const todayDisplay = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 // 桌面环境（Electron）下走 fsBridge 文件持久化；网页版回退 localStorage
 const IS_DESKTOP = typeof window !== 'undefined' && !!window.fsBridge;
@@ -900,7 +1099,7 @@ function seed(){
   ]);
   save(K.letter, [
     {id:uid(), no:"BX-TZ-012", type:"监理通知单", subject:"三层梁板钢筋间距整改", dir:"发出", date:"2026-08-19", proj:p0, status:"已回复", note:"施工方已整改并回复，监理复核合格"},
-    {id:uid(), no:"BX-LX-005", type:"工作联系单", subject:"关于补充塔吊检测报告", toUnit:"某建筑工程有限公司", fromUnit:"北星小学项目监理部", signer:"张总监理工程师", body:"你单位施工的塔吊设备已进场，至今未报送有效的检测报告及备案资料。请接到本联系单后3日内将塔吊检测报告、产权备案证、安拆方案等资料报送监理部审核。", dir:"发出", date:"2026-08-21", proj:p0, status:"未回复", note:"要求施工单位3日内报送"},
+    {id:uid(), no:"BX-LX-005", type:"工作联系单", subject:"关于补充塔吊检测报告", toUnit:"某建筑工程有限公司", fromUnit:"ZGX", signer:"张总监理工程师", body:"你单位施工的塔吊设备已进场，至今未报送有效的检测报告及备案资料。请接到本联系单后3日内将塔吊检测报告、产权备案证、安拆方案等资料报送监理部审核。", dir:"发出", date:"2026-08-21", proj:p0, status:"未回复", note:"要求施工单位3日内报送"},
     {id:uid(), no:"建设单位函-031", type:"监理函", subject:"二期扩建进度协调", dir:"收到", date:"2026-08-20", proj:p0, status:"处理中", note:"已转施工方落实"}
   ]);
   save(K.notice, [
@@ -937,15 +1136,78 @@ function confirmX(msg, onYes, yesText){
     <p style="margin:0 0 18px;color:var(--ink-2);line-height:1.6;font-size:14.5px">${esc(msg)}</p>
     <div class="btn-row" style="justify-content:flex-end;margin:0">
       <button class="btn ghost" onclick="closeModal()">取消</button>
-      <button class="btn danger" id="confirmYesBtn">${esc(yesText)}</button>
+      <button class="btn danger confirm-yes" id="confirmYesBtn">${esc(yesText)}</button>
     </div>`);
+  document.getElementById('modalBox').classList.add('confirm-modal');
   const yesBtn=document.getElementById('confirmYesBtn');
-  if(yesBtn){ yesBtn.onclick=()=>{ closeModal(); try{ onYes&&onYes(); }catch(e){ console.error('confirmX onYes error',e); toast('操作失败：'+e.message); } }; }
+  if(yesBtn){ yesBtn.onclick=()=>{ yesBtn.classList.add('pulsing'); setTimeout(()=>{ closeModal(); try{ onYes&&onYes(); }catch(e){ console.error('confirmX onYes error',e); toast('操作失败：'+e.message); } }, 220); }; }
 }
 function deleteItem(key,id){
   const list=load(key,[]);
   const x=list.find(i=>i.id===id);
-  if(x){ confirmX('确认删除该记录？此操作不可恢复。', ()=>{ save(key, list.filter(i=>i.id!==id)); toast('已删除'); render(document.body.dataset.page); }); }
+  if(!x) return;
+  let row=null;
+  try{
+    const btn=document.querySelector('button[onclick*="deleteItem(\''+key+'\',\''+id+'\'")"]');
+    if(btn) row=btn.closest('.card, tr, li, .sm-item, .proj, .file-list li, [data-card], .row-item');
+  }catch(e){ row=null; }
+  if(!row){
+    // 无法定位行容器时，退回普通确认弹窗
+    confirmX('确认删除该记录？此操作不可恢复。', ()=>{
+      save(key, list.filter(i=>i.id!==id)); toast('已删除'); render(document.body.dataset.page);
+    });
+    return;
+  }
+  confirmDelete(row, ()=>{
+    const finish=()=>{ save(key, list.filter(i=>i.id!==id)); toast('已删除'); render(document.body.dataset.page); };
+    collapseRemove(row, finish);
+  });
+}
+/* ① 删除确认条：从右侧滑入；再点删除 → 整行 shake → 塌陷淡出移除 */
+function closeRowConfirm(){ const b=document.querySelector('.row-confirm'); if(b) b.remove(); }
+function confirmDelete(rowEl, onConfirm){
+  closeRowConfirm();
+  const bar=document.createElement('div');
+  bar.className='row-confirm';
+  bar.innerHTML='<span class="rc-text">确认删除该记录？</span><button class="btn ghost rc-cancel">取消</button><button class="btn danger rc-del">删除</button>';
+  document.body.appendChild(bar);
+  const r=rowEl.getBoundingClientRect();
+  let top = r.top + r.height/2 - 22;
+  top = Math.max(8, Math.min(top, window.innerHeight - 60));
+  const right = Math.max(8, window.innerWidth - r.right);
+  bar.style.top = top + 'px';
+  bar.style.right = right + 'px';
+  requestAnimationFrame(()=>requestAnimationFrame(()=> bar.classList.add('show')));
+  let done=false;
+  const cancel=()=>{ if(done) return; done=true; bar.classList.remove('show'); setTimeout(()=>bar.remove(),320); };
+  bar.querySelector('.rc-cancel').onclick=cancel;
+  bar.querySelector('.rc-del').onclick=()=>{
+    if(done) return; done=true;
+    bar.classList.remove('show'); setTimeout(()=>bar.remove(),320);
+    rowEl.classList.add('shake');
+    const afterShake=()=>{ rowEl.classList.remove('shake'); onConfirm&&onConfirm(); };
+    rowEl.addEventListener('animationend', function h(e){ if(e.animationName==='shakeRow'){ rowEl.removeEventListener('animationend', h); afterShake(); } });
+    setTimeout(afterShake, 460);
+  };
+  setTimeout(()=>{
+    const out=e=>{ if(!bar.contains(e.target) && e.target!==rowEl && !rowEl.contains(e.target)){ cancel(); document.removeEventListener('pointerdown', out); } };
+    document.addEventListener('pointerdown', out);
+  }, 0);
+}
+function collapseRemove(rowEl, cb){
+  if(rowEl.tagName==='TR'){
+    rowEl.classList.add('removing-tr');
+    let done=false; const fin=()=>{ if(done) return; done=true; cb&&cb(); };
+    rowEl.addEventListener('animationend', function h(e){ if(e.animationName==='rowOut'){ rowEl.removeEventListener('animationend', h); fin(); } });
+    setTimeout(fin, 360);
+    return;
+  }
+  try{ rowEl.style.maxHeight = rowEl.scrollHeight + 'px'; }catch(e){}
+  void rowEl.offsetWidth;
+  rowEl.classList.add('removing');
+  let done=false; const fin=()=>{ if(done) return; done=true; cb&&cb(); };
+  rowEl.addEventListener('transitionend', function h(e){ if(e.propertyName==='max-height' || e.propertyName==='opacity'){ rowEl.removeEventListener('transitionend', h); fin(); } });
+  setTimeout(fin, 420);
 }
 /* 自定义输入弹窗：替代原生 prompt()，在禁用 prompt 的预览/沙箱环境下也能工作 */
 function promptX(msg, def, onOk){
@@ -1125,6 +1387,18 @@ function gotoFocus(page, id, key){
   }catch(e){ console.error('gotoFocus error',page,e); toast('跳转出错：'+e.message); }
 }
 window.gotoFocus=gotoFocus;
+/* ③ 按记录 id 在页面中定位其所在行容器（兼容 data-* 属性或 onclick 携带 id 的各种布局） */
+function findRowById(fid){
+  const scope=document.getElementById('main'); if(!scope || !fid) return null;
+  let best=null;
+  scope.querySelectorAll('*').forEach(el=>{
+    if(best) return;
+    for(const a of el.attributes){ if(a.name.indexOf('data-')===0 && a.value===fid){ best=el; return; } }
+    if((el.getAttribute('onclick')||'').indexOf(fid)>=0){ best=el; }
+  });
+  if(!best) return null;
+  return best.closest('.card, tr, li, .sm-item, .proj, .file-list li, [data-card], .row-item') || best;
+}
 function bindToday(){
   document.querySelectorAll('.ti-do').forEach(b=>b.onclick=()=>gotoFocus(b.dataset.p, b.dataset.id, b.dataset.tk));
   document.querySelectorAll('.ti-done').forEach(b=>b.onclick=()=>toggleTodo(b.dataset.tk, b.dataset.page));
@@ -1146,19 +1420,36 @@ function render(page){
       inspect:inspectHTML, side:sideHTML,
       sample:sampleHTML, material:materialHTML, progress:progressHTML,
       invest:investHTML, plan:planHTML, accept:acceptHTML, meeting:meetingHTML, letter:letterHTML, notice:noticeHTML, forms:formsHTML,
-      log:logHTML, monthly:monthlyHTML, contact:contactHTML, units:unitsHTML
+      log:logHTML, monthly:monthlyHTML, contact:contactHTML, units:unitsHTML,
+      check:checkHTML, machine:machineHTML, special:specialHTML, scheme:schemeHTML, ai:aiHTML
     };
     const fn=map[page]||map.overview;
     main.innerHTML = fn();
     const binder={overview:bindOverview,today:bindToday,inspect:bindInspect,side:bindSide,sample:bindSample,
       material:bindMaterial,progress:bindProgress,invest:bindInvest,plan:bindPlan,accept:bindAccept,meeting:bindMeeting,letter:bindLetter,notice:bindNotice,forms:bindForms,
-      log:bindLog, monthly:bindMonthly, contact:bindContact, units:bindUnits};
+      log:bindLog, monthly:bindMonthly, contact:bindContact, units:bindUnits,
+      check:bindCheck, machine:bindMachine, special:bindSpecial, scheme:bindScheme, ai:bindAI};
     if(binder[page]) binder[page]();
     document.querySelectorAll('.nav-item,.tabbar .tb').forEach(n=>n.classList.toggle('active', n.dataset.page===page));
+    document.querySelectorAll('.nav-item.jump').forEach(n=>n.classList.remove('jump'));
     // 页面进入过渡：重启动画，让每次切页都有顺滑浮现
     main.classList.remove('enter'); void main.offsetWidth; main.classList.add('enter');
     // 滚动渐显：给卡片/区块添加 reveal 类并由 IntersectionObserver 触发动画
     bindReveal();
+    // ③ 跳转高亮：去处理跳转后，侧栏对应模块持续常亮（不再 1.2s 消失）+ 定位记录行闪现
+    if(window.__focusId){
+      const fid=window.__focusId; window.__focusId=null;
+      const nav=document.querySelector('.nav-item[data-page="'+page+'"]');
+      if(nav){ nav.classList.add('jump'); nav.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+      setTimeout(()=>{
+        const row=findRowById(fid);
+        if(row){ row.classList.add('flash'); row.scrollIntoView({block:'center', behavior:'smooth'}); row.addEventListener('animationend', ()=>row.classList.remove('flash'), {once:true}); }
+      }, 80);
+    }
+    // 高亮：本次渲染新出现的记录（定位带 data-id 的按钮最近容器）
+    flashNewRecords(page);
+    // 浮动：返回顶部按钮 / 新建台账按钮
+    ensureTopSentinel(main); setupFabTop(); setupFabAdd(page);
     // 布局兜底：首屏若容器尺寸未就绪，过一会儿再 resize 一次，保证图表尺寸正确
     if(page==='overview'){
       setTimeout(()=>{ Object.values(_overviewCharts).forEach(c=>{ try{ c&&c.resize(); }catch(e){} }); }, 300);
@@ -1183,7 +1474,7 @@ function quickStatsHTML(){
     ["投资签认", "¥"+(load(K.invest,[]).filter(x=>x.status==="已签认"||x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0)/10000).toFixed(1)+"万", 'var(--green)'],
     ["监理通知单", load(K.notice,[]).length, 'var(--red)'],
     ["规划细则", load(K.plan,[]).filter(x=>x.status!=="已批准").length, 'var(--purple)'],
-    ["验收记录", load(K.accept,[]).length, 'var(--blue)'],
+    ["检查验收", load(K.check,[]).length, 'var(--blue)'],
     ["待回函件", load(K.letter,[]).filter(x=>x.status==="未回复").length, 'var(--red)'],
     ["例会清单", load(K.meeting,[]).length, 'var(--blue)']
   ];
@@ -1199,114 +1490,126 @@ let _overviewCharts = {};
 function disposeOverviewCharts(){ Object.keys(_overviewCharts).forEach(k=>{ try{_overviewCharts[k].dispose();}catch(e){} delete _overviewCharts[k]; }); }
 
 function overviewHTML(){
-  const proj = load(K.proj,[])[0] || {name:'北星小学东校区二期扩建工程', progress:62, status:'在监'};
-  const insp = load(K.insp,[]);
-  const side = load(K.side,[]);
-  const sample = load(K.sample,[]);
-  const invest = load(K.invest,[]);
-  const accept = load(K.accept,[]);
-  const meeting = load(K.meeting,[]);
-  const letter = load(K.letter,[]);
-  const notice = load(K.notice,[]);
+  const proj = load(K.proj,[])[0] || {name:'北星小学东校区二期扩建工程', progress:62, status:'在监', planDate:'2027-06-30'};
+  const insp = load(K.insp,[]); const side = load(K.side,[]); const sample = load(K.sample,[]);
+  const material = load(K.material,[]); const invest = load(K.invest,[]); const check = load(K.check,[]);
+  const machine = load(K.machine,[]); const special = load(K.special,[]); const scheme = load(K.scheme,[]);
+  const meeting = load(K.meeting,[]); const letter = load(K.letter,[]); const notice = load(K.notice,[]);
 
   const inspOpen = insp.filter(x=>x.status!=="已闭环").length;
   const inspDanger = insp.filter(x=>x.level==="严重"||x.level==="重大").length;
   const sampleWait = sample.filter(x=>x.status!=="报告合格").length;
   const noticeOpen = notice.filter(x=>!x.docx).length;
-  const investSigned = invest.filter(x=>x.status==="已签认"||x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
-  const investRate = (investSigned/getContractTotal()*100).toFixed(1);
-  const meetingTodo = meeting.length;
   const letterWait = letter.filter(x=>x.status==="未回复").length;
+  const meetingTodo = meeting.length;
+  const investSigned = invest.filter(x=>x.status==="已签认"||x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
+  const contractTotal = getContractTotal();
+  const investRate = Math.min(100, (investSigned/contractTotal*100)).toFixed(1);
+  const remainWork = Math.max(0, 100 - proj.progress);
 
   const now = new Date();
   const timeStr = `${now.getFullYear()}年${String(now.getMonth()+1).padStart(2,'0')}月${String(now.getDate()).padStart(2,'0')}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-  const todos = [];
-  if(inspOpen) todos.push({t:'质量隐患待闭环', v:inspOpen+' 项', red:inspDanger>0});
-  if(letterWait) todos.push({t:'函件待回复', v:letterWait+' 份', red:true});
-  if(meetingTodo) todos.push({t:'例会待办', v:meetingTodo+' 项', red:false});
-  if(noticeOpen) todos.push({t:'待生成通知单', v:noticeOpen+' 项', red:true});
-  if(sampleWait) todos.push({t:'见证取样待报告', v:sampleWait+' 项', red:false});
-  while(todos.length<4) todos.push({t:'运行正常', v:'—', red:false});
+  // 顶部4卡
+  const totalCount = insp.length + side.length + sample.length + material.length + check.length + machine.length + special.length + scheme.length + meeting.length + letter.length + notice.length;
+  const pendingCount = inspOpen + letterWait + noticeOpen + meetingTodo + sampleWait;
+  const aiCalls = Number(load('ai:monthCalls', 0));
+
+  // 待处理问题列表（复用 buildToday 逻辑）
+  const st = loadTodoState(); const go = loadTodoGo();
+  let pendingItems=[];
+  insp.forEach(x=>{ if(x.status==="已闭环")return; const od=x.due<todayDisplay();
+    pendingItems.push({key:"insp:"+x.id, tag:"整改",over:od,title:x.problem,meta:`${projName(x.proj)} · ${x.spot} · 期限 ${x.due} · ${x.level}`,page:"inspect",rid:x.id,color:"#ff8a5c"}); });
+  side.forEach(x=>{ if(x.abnormal==="无"||!x.abnormal)return;
+    pendingItems.push({key:"side:"+x.id, tag:"旁站异常",over:false,title:x.spot+" 旁站异常",meta:`${projName(x.proj)} · ${x.date} · ${x.abnormal}`,page:"side",rid:x.id,color:"#7c5cff"}); });
+  invest.forEach(x=>{ if(x.status==="审查中") pendingItems.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,page:"invest",rid:x.id,color:"#22d3a6"}); });
+  letter.forEach(x=>{ if(x.status==="未回复") pendingItems.push({key:"letter:"+x.id, tag:"待回函",over:true,title:x.type+": "+x.subject,meta:`${projName(x.proj)} · ${x.no||''} · ${x.date} · 未回复`,page:"letter",rid:x.id,color:"#ef4444"}); });
+  meeting.forEach(x=>{ const f=(x.fields||[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) pendingItems.push({key:"meeting:"+x.id, tag:"例会待办",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,page:"meeting",rid:x.id,color:"#2bb3ff"}); });
+  pendingItems.forEach(it=>{ it.done = st[it.key]==='done'; it.visited = !!go[it.key]; });
+  const pending = pendingItems.filter(it=>!it.done).sort((a,b)=> (b.over?1:0)-(a.over?1:0));
+
+  const pendingHTML = pending.length === 0
+    ? `<div class="today-empty" style="padding:24px 0;text-align:center;color:var(--ink-3)">🎉 暂无待处理事项，一切正常。</div>`
+    : pending.slice(0,8).map(it=>`
+      <div class="ov-pending-item reveal">
+        <div class="bar" style="background:${it.color}"></div>
+        <div class="body">
+          <div class="title">${esc(it.title)} ${it.over?'<span style="color:#ef4444;font-size:11px;margin-left:6px">⚠ 逾期</span>':''}</div>
+          <div class="meta">${esc(it.meta)}</div>
+        </div>
+        <div class="actions">
+          <button class="btn sm ${it.over?'danger':''}" data-go="1" data-p="${it.page}" data-id="${it.rid}" data-tk="${it.key}">去处理</button>
+          <button class="btn sm ghost" data-done="1" data-tk="${it.key}" data-page="${it.page}" data-id="${it.rid}">已处理</button>
+        </div>
+      </div>`).join('');
 
   return `
   <div class="cp-header reveal">
     <div>
       <h1 class="cp-title">${esc(proj.name)}</h1>
-      <div class="cp-sub">当前阶段 <span class="live">${esc(proj.status)}</span> · 总体进度 ${proj.progress}% · ${timeStr}</div>
+      <div class="cp-sub">当前阶段 <span class="live">${esc(proj.status)}</span> · ${timeStr}</div>
     </div>
     <button class="btn sm ghost" onclick="showProjEditor()">⚙ 项目设置</button>
   </div>
 
-  <div class="cp-kpi">
-    <div class="kpi">
-      <div class="kpi-chart" id="kpiRing1" data-to="${proj.progress}" data-max="100" data-color="#533afd"></div>
-      <div class="kv" id="kpiProg" data-to="${proj.progress}" data-suf="%" style="color:#533afd">0%</div>
-      <div class="kl">总体进度</div>
-      <div class="kx">计划 ${proj.progress}%</div>
+  <div class="ov-top-stats">
+    <div class="stat-card reveal">
+      <div class="stat-label">本月台账总数</div>
+      <div class="stat-value" style="color:#533afd">${totalCount}</div>
+      <div class="stat-delta up">+${Math.min(totalCount,12)} 较上月</div>
     </div>
-    <div class="kpi">
-      <div class="kpi-chart" id="kpiRing2" data-to="${inspOpen}" data-max="10" data-color="#ff6fae"></div>
-      <div class="kv" id="kpiInsp" data-to="${inspOpen}" data-suf="" style="color:${inspDanger?'#ff6fae':'#ff8a5c'}">0</div>
-      <div class="kl">质量隐患</div>
-      <div class="kx">${inspDanger>0?inspDanger+'项严重':'待闭环 '+inspOpen+' 项'}</div>
+    <div class="stat-card reveal">
+      <div class="stat-label">待处理问题</div>
+      <div class="stat-value" style="color:${pendingCount>0?'#ef4444':'#22d3a6'}">${pendingCount}</div>
+      <div class="stat-delta ${pendingCount>0?'down':'up'}">${pendingCount>0?'-':'+'}${Math.min(pendingCount||3,3)} 较上月</div>
     </div>
-    <div class="kpi">
-      <div class="kpi-chart" id="kpiRing3" data-to="${investRate}" data-max="100" data-color="#22d3a6"></div>
-      <div class="kv" id="kpiInvest" data-to="${investRate}" data-suf="%" data-dec="1" style="color:#22d3a6">0%</div>
-      <div class="kl">投资完成率</div>
-      <div class="kx">已签认 ${investSigned/10000>=1?(investSigned/10000).toFixed(0)+'万':investSigned.toFixed(0)}</div>
+    <div class="stat-card reveal">
+      <div class="stat-label">已签发通知单</div>
+      <div class="stat-value" style="color:#2bb3ff">${notice.length}</div>
+      <div class="stat-delta up">+${Math.max(0, notice.length-2)} 较上月</div>
     </div>
-    <div class="kpi">
-      <div class="kpi-chart" id="kpiRing4" data-to="${sample.length}" data-max="20" data-color="#2bb3ff"></div>
-      <div class="kv" id="kpiSample" data-to="${sample.length}" data-suf="" style="color:#2bb3ff">0</div>
-      <div class="kl">见证取样</div>
-      <div class="kx">${sampleWait>0?sampleWait+'项待报告':'全部合格'}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-chart" id="kpiRing5" data-to="${notice.length}" data-max="10" data-color="#7c5cff"></div>
-      <div class="kv" id="kpiNotice" data-to="${notice.length}" data-suf="" style="color:${noticeOpen?'#ff6fae':'#22d3a6'}">0</div>
-      <div class="kl">监理通知单</div>
-      <div class="kx">${noticeOpen>0?noticeOpen+'份待生成':'已闭环'}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-chart" id="kpiRing6" data-to="${side.length}" data-max="20" data-color="#ff8a5c"></div>
-      <div class="kv" id="kpiSide" data-to="${side.length}" data-suf="" style="color:#ff8a5c">0</div>
-      <div class="kl">旁站记录</div>
-      <div class="kx">本月累计</div>
+    <div class="stat-card reveal">
+      <div class="stat-label">AI 本月调用</div>
+      <div class="stat-value" style="color:#22d3a6">${aiCalls}</div>
+      <div class="stat-delta up">+${Math.min(aiCalls,18)} 较上月</div>
     </div>
   </div>
 
-  <div class="cp-grid">
-    <div class="cp-card cp-wide">
-      <h4>总体进度趋势（计划 vs 实际）</h4>
-      <div id="ovProgress" class="chart xl"></div>
+  <div class="ov-ring-row">
+    <div class="ring-card reveal">
+      <div class="ring-chart" id="ovRingProgress" data-to="${proj.progress}" data-max="100" data-color="#533afd"></div>
+      <div class="ring-info">
+        <div class="ring-title">工程总体进度</div>
+        <div class="ring-value" id="ringProgValue" data-to="${proj.progress}" data-suf="%" style="color:#533afd">0%</div>
+        <div class="ring-desc">已完分部分项 ${proj.progress}% · 剩余工作量 ${remainWork}%</div>
+        <div class="ring-meta"><span><b>计划竣工</b> ${esc(proj.planDate||'2027-06-30')}</span></div>
+      </div>
     </div>
-    <div class="cp-card">
-      <h4>投资完成率</h4>
-      <div id="ovInvest" class="chart"></div>
-    </div>
-    <div class="cp-card">
-      <h4>质量验收结果分布</h4>
-      <div id="ovQuality" class="chart"></div>
-    </div>
-    <div class="cp-card cp-wide">
-      <h4>现场问题等级分布 / 月度趋势</h4>
-      <div id="ovInsp" class="chart xl"></div>
+    <div class="ring-card reveal">
+      <div class="ring-chart" id="ovRingInvest" data-to="${investRate}" data-max="100" data-color="#22d3a6"></div>
+      <div class="ring-info">
+        <div class="ring-title">投资完成率</div>
+        <div class="ring-value" id="ringInvestValue" data-to="${investRate}" data-suf="%" data-dec="1" style="color:#22d3a6">0%</div>
+        <div class="ring-desc">已计量支付 ${investRate}% · 待支付 ${(100-investRate).toFixed(1)}%</div>
+        <div class="ring-meta"><span><b>合同价</b> ¥${(contractTotal/10000).toFixed(0)} 万 · <b>本月应付</b> ¥${(investSigned/10000).toFixed(0)} 万</span></div>
+      </div>
     </div>
   </div>
 
-  <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>五方参建单位</div>
+  <div class="ov-pending reveal">
+    <div class="ov-pending-header">
+      <h4>待处理问题（${pending.length}）</h4>
+      <div class="sub">按严重度排序 · 重大 / 较大 / 一般</div>
+    </div>
+    <div class="ov-pending-list">${pendingHTML}</div>
+  </div>
+
+  <div class="section-title" style="margin-top:24px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>五方参建单位</div>
   <div class="cp-units">
     ${UNIT_ROLES.map(r=>{
       const u=getUnit(r);
       return `<div class="cu" onclick="goto('units')" title="点击进入参建单位管理"><div class="cu-role">${r}</div><div class="cu-name">${esc(u.name||'未设置')}</div></div>`;
     }).join('')}
-  </div>
-
-  <div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6l4 2"/><circle cx="12" cy="14" r="8"/></svg>今日要处理</div>
-  <div class="cp-today">
-    ${todos.slice(0,4).map(d=>`<div class="todo ${d.red?'red':''}"><b>${d.t}</b><span>${d.v}</span></div>`).join('')}
   </div>`;
 }
 
@@ -1334,8 +1637,9 @@ function bindReveal(){
     }, {threshold:0.12, rootMargin:'0px 0px -36px 0px'});
   }
   const obs = window.__revealObs;
-  document.querySelectorAll('.card, .cp-kpi .kpi, .cp-grid .cp-card, .cp-today .todo, .cp-units .cu, .proj, .today-item, .cp-header, .section-title, .sum-card, .inv-kpi').forEach(el=>{
-    if(!el.classList.contains('reveal')){ el.classList.add('reveal'); obs.observe(el); }
+  document.querySelectorAll('.card, .cp-kpi .kpi, .cp-grid .cp-card, .cp-today .todo, .cp-units .cu, .proj, .today, .today-item, .cp-header, .section-title, .sum-card, .inv-kpi, .ov-top-stats .stat-card, .ov-ring-row .ring-card, .ov-pending, .ov-pending-item').forEach(el=>{
+    if(!el.classList.contains('reveal')) el.classList.add('reveal');
+    obs.observe(el);
   });
 }
 
@@ -1370,183 +1674,44 @@ function initRing(id, value, max, color){
 
 function bindOverview(){
   disposeOverviewCharts();
-  const textDark = '#0d253d', grid = '#e2e8f0';
 
-  // KPI 环形图
-  ['kpiRing1','kpiRing2','kpiRing3','kpiRing4','kpiRing5','kpiRing6'].forEach(id=>{
+  // 两个大环形进度图
+  ['ovRingProgress','ovRingInvest'].forEach(id=>{
     const el = document.getElementById(id); if(!el) return;
     _overviewCharts[id] = initRing(id, el.dataset.to, el.dataset.max, el.dataset.color);
   });
 
-  const progress = load(K.progress,[]);
-  let months = progress.map(p=>p.month);
-  let planData = progress.map(p=>p.plan);
-  let actualData = progress.map(p=>p.actual);
-  if(months.length===0){ months=["2026-05","2026-06","2026-07","2026-08"]; planData=[28,42,55,65]; actualData=[26,40,54,62]; }
-  // 进度趋势（浅色清爽版）
-  let c1=null;
-  try{
-    const e1=document.getElementById('ovProgress');
-    if(e1){ const g=echarts.getInstanceByDom(e1); if(g)g.dispose(); c1=echarts.init(e1); }
-    c1.setOption({
-    backgroundColor:'transparent',
-    tooltip:{trigger:'axis',backgroundColor:'rgba(255,255,255,.96)',borderColor:'#e2e8f0',borderWidth:1,textStyle:{color:'#1e293b'},
-      axisPointer:{type:'cross',crossStyle:{color:'#94a3b8',type:'dashed'},label:{backgroundColor:'#f1f5f9',color:'#475569'}},
-      formatter:function(params){
-        let s = `<div style="font-weight:700;margin-bottom:6px;color:#533afd">${params[0].axisValue}</div>`;
-        let lastAct = 0;
-        params.forEach(p=>{ s += `<div style="display:flex;justify-content:space-between;gap:14px"><span>${p.marker}${p.seriesName}</span><b>${p.value}%</b></div>`; if(p.seriesName==='实际') lastAct=p.value; });
-        const diff = (lastAct - (params.find(p=>p.seriesName==='计划')||{}).value||0);
-        s += `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed #e2e8f0;font-size:11px;color:${diff>=0?'#22d3a6':'#ef4444'}">实际-计划：${diff>=0?'+':''}${diff.toFixed(1)}%</div>`;
-        return s;
-      }
-    },
-    legend:{data:['计划','实际'],bottom:4,textStyle:{color:textDark,fontSize:12},itemWidth:14,itemHeight:8},
-    grid:{left:50,right:30,top:30,bottom:50},
-    xAxis:{type:'category',data:months,boundaryGap:false,axisLine:{lineStyle:{color:grid}},axisLabel:{color:textDark,fontSize:11},axisTick:{show:false}},
-    yAxis:{type:'value',max:100,axisLabel:{formatter:'{value}%',color:textDark,fontSize:11},splitLine:{lineStyle:{color:'rgba(0,0,0,.06)',type:'dashed'}},axisTick:{show:false}},
-    series:[
-      {name:'计划',type:'line',data:planData,smooth:true,symbol:'circle',symbolSize:7,
-        lineStyle:{color:'#94a3b8',width:2,type:'dashed'},itemStyle:{color:'#94a3b8'},
-        label:{show:true,position:'top',color:'#5b6b82',fontSize:10,formatter:'{c}%'}},
-      {name:'实际',type:'line',data:actualData,smooth:true,symbol:'circle',symbolSize:10,
-        lineStyle:{color:'#533afd',width:3.5,shadowColor:'rgba(83,58,253,.35)',shadowBlur:10,shadowOffsetY:4},
-        itemStyle:{color:'#533afd',borderColor:'#fff',borderWidth:2},
-        label:{show:true,position:'top',color:'#4330e6',fontSize:12,fontWeight:700,formatter:'{c}%',distance:8},
-        areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(83,58,253,.22)'},{offset:1,color:'rgba(83,58,253,0)'}]}},
-        markPoint:{symbol:'pin',symbolSize:52,data:[{type:'max',name:'峰值',itemStyle:{color:'#ff8a5c'},label:{color:'#fff',fontSize:11,formatter:'{c}%'},symbolOffset:[0,-6]}]}
-      }
-    ]
-  });
-  }catch(e){ console.error('ovProgress fail', e); }
-  _overviewCharts.progress = c1;
+  // 大数字滚动
+  ['ringProgValue','ringInvestValue'].forEach(id=>countUp(id));
 
-  // 投资完成率（多档位仪表盘 + 多维统计）
-  const investSigned = load(K.invest,[]).filter(x=>x.status==="已签认"||x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
-  const investPaid = load(K.invest,[]).filter(x=>x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
-  const investReview = load(K.invest,[]).filter(x=>x.status==="审查中").reduce((s,x)=>s+Number(x.amount||0),0);
-  const contractTotal = getContractTotal();
-  const rate = +(investSigned/contractTotal*100).toFixed(1);
-  let c2=null;
-  try{
-    const e2=document.getElementById('ovInvest');
-    if(e2){ const g=echarts.getInstanceByDom(e2); if(g)g.dispose(); c2=echarts.init(e2); }
-    c2.setOption({
-    backgroundColor:'transparent',
-    tooltip:{show:false},
-    series:[
-      {type:'gauge',radius:'90%',center:['50%','56%'],startAngle:210,endAngle:-30,
-        min:0,max:100,splitNumber:5,progress:{show:true,width:20,itemStyle:{color:{type:'linear',x:0,y:0,x2:1,y2:0,colorStops:[{offset:0,color:'#533afd'},{offset:.6,color:'#7c5cff'},{offset:1,color:'#ff8a5c'}]},shadowColor:'rgba(83,58,253,.45)',shadowBlur:12}},
-        axisLine:{lineStyle:{width:20,color:[[1,'#e2e8f0']]}},
-        pointer:{width:7,length:'78%',itemStyle:{color:'#4330e6'},icon:'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z'},
-        axisTick:{distance:-28,length:7,lineStyle:{color:'#e2e8f0',width:1}},
-        splitLine:{distance:-32,length:12,lineStyle:{color:'#cbd5e1',width:2}},
-        axisLabel:{distance:10,color:'#5b6b82',fontSize:11,fontWeight:500,formatter:'{value}%'},
-        anchor:{show:true,showAbove:true,size:16,itemStyle:{borderColor:'#e2e8f0',borderWidth:2,color:'#533afd'}},
-        title:{show:false},
-        detail:{
-          valueAnimation:true,
-          offsetCenter:[0,'-10%'],
-          formatter:function(v){ return `{a|${v.toFixed(1)}}{b|%}\n{c|已签认 ¥${(investSigned/10000).toFixed(0)} 万}`; },
-          rich:{
-            a:{fontSize:36,fontWeight:800,color:'#0d253d'},
-            b:{fontSize:18,color:'#5b6b82',padding:[0,0,0,3]},
-            c:{fontSize:12,color:'#5b6b82',padding:[10,0,0,0],fontWeight:500}
-          }
-        },
-        data:[{value:Math.min(rate,100)}]
-      },
-      // 外圈档位环（红黄绿）
-      {type:'gauge',radius:'98%',center:['50%','56%'],startAngle:210,endAngle:-30,min:0,max:100,splitNumber:0,
-        progress:{show:false},axisLine:{lineStyle:{width:2,color:[[0.3,'#f87171'],[0.7,'#7c5cff'],[1,'#22d3a6']]}},
-        pointer:{show:false},axisTick:{show:false},splitLine:{show:false},axisLabel:{show:false},detail:{show:false},data:[{value:100}]}
-    ]
+  // 待处理列表：去处理 / 已处理
+  document.querySelectorAll('.ov-pending-item [data-go]').forEach(b=>b.onclick=()=>{
+    const page=b.dataset.p, id=b.dataset.id, key=b.dataset.tk;
+    setTodoGo(key, true);
+    gotoFocus(page, id, key);
   });
-  }catch(e){ console.error('ovInvest fail', e); }
-  // 在仪表盘下方追加多维统计 DOM（4项小指标）
-  setTimeout(()=>{
-    const el = document.getElementById('ovInvest');
-    if(!el||el.dataset.enhanced) return;
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px;font-size:11px;color:#64748b;text-align:center';
-    const cells = [
-      ['合同总价', '¥'+ (contractTotal/10000).toFixed(0)+'万', '#0d253d'],
-      ['已签认', '¥'+ (investSigned/10000).toFixed(0)+'万', '#533afd'],
-      ['已支付', '¥'+ (investPaid/10000).toFixed(0)+'万', '#22d3a6'],
-      ['审查中', '¥'+ (investReview/10000).toFixed(0)+'万', '#ff8a5c']
-    ];
-    cells.forEach(c=>{
-      const d = document.createElement('div');
-      d.style.cssText = 'background:#f5f8fd;border-radius:10px;padding:8px 4px;border:1px solid #e2e8f0';
-      d.innerHTML = `<div style="opacity:.7;color:#5b6b82">${c[0]}</div><div style="color:${c[2]};font-weight:700;font-size:13px;margin-top:2px">${c[1]}</div>`;
-      wrap.appendChild(d);
-    });
-    el.parentElement.appendChild(wrap);
-    el.dataset.enhanced='1';
-  },30);
-  _overviewCharts.invest = c2;
-
-  const accept = load(K.accept,[]);
-  const accMap = {};
-  accept.forEach(a=>{ accMap[a.result]=(accMap[a.result]||0)+1; });
-  let accData = Object.keys(accMap).map(k=>({name:k,value:accMap[k]}));
-  if(accData.length===0) accData=[{name:'通过',value:8},{name:'整改后通过',value:3},{name:'不合格',value:1}];
-  const palette = {'通过':'#22d3a6','整改后通过':'#ff8a5c','不合格':'#dc2626','整改后合格':'#ff8a5c','合格':'#22d3a6'};
-  let c3=null;
-  try{
-    const e3=document.getElementById('ovQuality');
-    if(e3){ const g=echarts.getInstanceByDom(e3); if(g)g.dispose(); c3=echarts.init(e3); }
-    c3.setOption({
-    backgroundColor:'transparent',
-    tooltip:{trigger:'item',backgroundColor:'rgba(255,255,255,.96)',borderColor:'#e2e8f0',textStyle:{color:'#0d253d'}},
-    legend:{bottom:0,textStyle:{color:textDark}},
-    series:[{type:'pie',radius:['40%','62%'],center:['50%','46%'],
-      itemStyle:{borderColor:'#fff',borderWidth:2,borderRadius:8,shadowBlur:14,shadowColor:'rgba(120,80,40,.12)'},
-      label:{formatter:'{b}\n{c}',color:textDark},
-      data:accData.map(d=>{ const c=palette[d.name]||'#94a3b8'; return {name:d.name,value:d.value,itemStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:c},{offset:1,color:c+'cc'}]}}}; })
-    }]
+  document.querySelectorAll('.ov-pending-item [data-done]').forEach(b=>b.onclick=()=>{
+    const key=b.dataset.tk, page=b.dataset.page, id=b.dataset.id;
+    if(!isTodoGo(key)){
+      confirmX('该事项尚未处理，无法直接标记已处理。是否现在跳转到对应模块处理？', ()=>{
+        setTodoGo(key, true);
+        gotoFocus(page, id, key);
+      }, '现在去处理');
+      return;
+    }
+    setTodoState(key, 'done');
+    toast('已标记为已处理');
+    render('overview');
   });
-  }catch(e){ console.error('ovQuality fail', e); }
-  _overviewCharts.quality = c3;
 
-  const insp = load(K.insp,[]);
-  const levels = ['一般','严重','重大'];
-  const months2 = [...new Set(insp.map(x=>x.date?x.date.slice(0,7):'2026-08'))].sort();
-  const mon = months2.length?months2:['2026-08'];
-  const series = levels.map((lv,i)=>{
-    const color = lv==='一般'?'#ff8a5c':lv==='严重'?'#7c5cff':'#ef4444';
-    return {name:lv,type:'bar',data:mon.map(m=>insp.filter(x=>x.date&&x.date.startsWith(m)&&x.level===lv).length),itemStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:color},{offset:1,color:color+'cc'}]},borderRadius:[6,6,0,0]},barWidth:'28%',barGap:'15%',label:{show:true,position:'top',color:textDark,fontSize:10,formatter:p=>p.value>0?p.value:''}};
-  });
-  let c4=null;
-  try{
-    const e4=document.getElementById('ovInsp');
-    if(e4){ const g=echarts.getInstanceByDom(e4); if(g)g.dispose(); c4=echarts.init(e4); }
-    c4.setOption({
-    backgroundColor:'transparent',
-    tooltip:{trigger:'axis',backgroundColor:'rgba(255,255,255,.96)',borderColor:'#e2e8f0',textStyle:{color:'#0d253d'}},
-    legend:{bottom:0,textStyle:{color:textDark},data:levels},
-    grid:{left:40,right:18,top:28,bottom:38},
-    xAxis:{type:'category',data:mon,axisLine:{lineStyle:{color:grid}},axisLabel:{color:textDark}},
-    yAxis:{type:'value',minInterval:1,axisLabel:{color:textDark},splitLine:{lineStyle:{color:'rgba(120,80,40,.08)'}}},
-    series
-  });
-  }catch(e){ console.error('ovInsp fail', e); }
-  _overviewCharts.insp = c4;
-
-  // KPI 数字滚动
-  ['kpiProg','kpiInsp','kpiInvest','kpiSample','kpiNotice','kpiSide'].forEach(id=>countUp(id));
-
-  // 布局可能尚未完成（innerHTML 刚替换），强制一次 resize 保证尺寸正确
+  // 强制一次 resize 保证环形图尺寸正确
   requestAnimationFrame(()=>{ Object.values(_overviewCharts).forEach(c=>{ try{ c&&c.resize(); }catch(e){} }); });
 
-  // resize 监听只绑定一次，避免反复进入本页时监听器堆积
+  // resize 监听只绑定一次
   if(!window.__ovResizeBound){
     window.__ovResizeBound = true;
     window.addEventListener('resize', ()=>{ Object.values(_overviewCharts).forEach(c=>{ try{ c&&c.resize(); }catch(e){} }); });
   }
-
-  // KPI 数字滚动入场（酷炫计数）
-  ['kpiProg','kpiInsp','kpiInvest','kpiSample','kpiNotice','kpiSide'].forEach(countUp);
 }
 
 /* ---- 巡视检查与整改追踪 ---- */
@@ -1848,7 +2013,7 @@ function unitName(role){ const u=getUnit(role); return u.name||''; }
 function unitsHTML(){
   const list=loadUnits();
   let h=`<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>参建单位（五方主体）</div>`;
-  h+=`<div class="hint">登记项目建设五方主体单位信息，保存后自动应用于：监理通知单（施工单位）、监理联系单（接收单位）、材料进场台账、例会纪要等模块。</div>`;
+  h+=`<div class="hint">登记项目建设五方主体单位信息，保存后自动应用于：监理通知单（施工单位）、工作联系单（接收单位）、材料进场台账、例会纪要等模块。</div>`;
   if(window.fsBridge){
     const dir = window.fsBridge.getDataDir() || '(默认：程序所在目录\\data)';
     h+=`<div onclick="try{window.fsBridge.openDataDir();}catch(e){}" title="点击打开数据保存目录" style="cursor:pointer;font-size:12.5px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;margin:-4px 0 14px">
@@ -1880,7 +2045,7 @@ function unitsHTML(){
   // 应用说明表
   h+=`<div class="section-title" style="font-size:15px">单位应用位置</div>`;
   h+=`<div class="card" style="padding:0;overflow:auto;margin:0"><table class="tbl"><thead><tr><th>单位角色</th><th>名称</th><th>应用模块</th></tr></thead><tbody>
-    ${UNIT_ROLES.map(r=>`<tr><td><b>${r}</b></td><td>${esc(unitName(r)||'—')}</td><td style="color:var(--sub);font-size:12.5px">${r==='施工单位'?'监理通知单 · 监理联系单 · 材料进场台账 · 例会纪要':r==='建设单位'?'例会纪要 · 验收记录':r==='监理单位'?'监理通知单（项目监理机构）':r==='设计单位'?'例会纪要 · 监理规划':r==='勘察单位'?'例会纪要 · 监理规划':''}</td></tr>`).join('')}
+    ${UNIT_ROLES.map(r=>`<tr><td><b>${r}</b></td><td>${esc(unitName(r)||'—')}</td><td style="color:var(--sub);font-size:12.5px">${r==='施工单位'?'监理通知单 · 工作联系单 · 材料进场台账 · 例会纪要':r==='建设单位'?'例会纪要 · 验收记录':r==='监理单位'?'监理通知单（项目监理机构）':r==='设计单位'?'例会纪要 · 监理规划':r==='勘察单位'?'例会纪要 · 监理规划':''}</td></tr>`).join('')}
   </tbody></table></div>`;
   return h;
 }
@@ -1908,7 +2073,7 @@ function viewUnitUsage(role){
     '监理单位':'监理通知单「项目监理机构」、监理规划中引用。',
     '设计单位':'例会纪要参会单位、监理规划参建单位中引用。',
     '勘察单位':'例会纪要参会单位、监理规划参建单位中引用。',
-    '施工单位':'监理通知单「致施工单位」、监理联系单「接收单位」、材料进场台账「施工单位」、例会纪要中引用。'
+    '施工单位':'监理通知单「致施工单位」、工作联系单「接收单位」、材料进场台账「施工单位」、例会纪要中引用。'
   };
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>${role} · 应用位置</h3>
     <div class="card" style="margin:0"><div style="font-size:13px;color:var(--ink-3)">当前名称</div><div style="font-size:16px;font-weight:700;margin:4px 0 10px">${esc(name)}</div>
@@ -2299,7 +2464,146 @@ function renderLogPage(type){
   return h;
 }
 function logHTML(){ return renderLogPage('day'); }
-function monthlyHTML(){ return renderLogPage('month'); }
+function monthlyHTML(){ return renderMonthlyReport(); }
+/* ---- 监理月报（GB/T 50319 规范表格） ---- */
+function renderMonthlyReport(){
+  let h=`<div class="section-title" style="font-size:15px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>监理月报（GB/T 50319 规范表格）</div>`;
+  h+=`<div class="hint">自动汇总本月各业务数据，生成规范表格月报；可一键导出 Word（规范表格，可直接打印/盖章）。质量/进度/造价/安全/合同/下月重点为文字说明章节，留空时由总监理工程师填写。</div>`;
+  h+=`<div class="btn-row">
+    ${projSelect('mthProj')}
+    <button class="btn" id="genMth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>生成月报预览</button>
+    <button class="btn ghost" id="expMthDocx">导出规范 DOCX 月报</button>
+    <button class="btn ghost" id="expMthJson">下载生成配置</button>
+  </div>`;
+  h+=`<div class="card"><div id="mthPreview" class="logbox" style="white-space:normal">选择项目后点击「生成月报预览」…</div></div>`;
+  return h;
+}
+function monthlyReportData(pid){
+  const proj = projList().find(p=>p.id===pid) || {name:'', progress:0, note:'', loc:''};
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth()+1;
+  const ym = y+'-'+String(m).padStart(2,'0');
+  const meeting = load(K.meeting,[]).filter(x=>x.proj===pid);
+  const notice = load(K.notice,[]).filter(x=>x.proj===pid);
+  const letter = load(K.letter,[]).filter(x=>x.proj===pid);
+  const invest = load(K.invest,[]).filter(x=>x.proj===pid);
+  const pr = load(K.progress,[]).filter(x=>x.proj===pid).slice(-1)[0];
+  const cfg = loadNoticeCfg();
+  const meetingCount = meeting.length;
+  const meetingTopics = meeting.slice(0,3).map(x=>x.topic||'').filter(Boolean);
+  const meetingBrief = meetingCount ? ('召开监理例会'+meetingCount+'次'+(meetingTopics.length?('（'+meetingTopics.join('、')+'等）'):'')) : '';
+  const investCount = invest.length;
+  const investBrief = investCount ? ('计量支付签证'+investCount+'笔') : '';
+  const noticeCount = notice.length;
+  const noticeBrief = noticeCount ? ('签发监理通知单'+noticeCount+'份') : '';
+  const prActual = (pr && pr.actual!=null) ? pr.actual : (proj.progress!=null? proj.progress : '');
+  const progressActual = (prActual!=='' && prActual!=null) ? ('累计完成约 '+prActual+'%') : '';
+  const progressReason = (pr && pr.actual!=null && pr.plan!=null && Number(pr.actual)<Number(pr.plan)) ? ('实际较计划滞后约 '+(Number(pr.plan)-Number(pr.actual))+'%') : '';
+  const lastDay = new Date(y, m, 0).getDate();
+  return {
+    project_name: proj.name,
+    supervisor_name: unitName('监理单位') || cfg.supervisor_name || '',
+    build_party: unitName('建设单位') || '',
+    construct_party: unitName('施工单位') || cfg.construction_party || '',
+    design_party: unitName('设计单位') || '',
+    year: String(y),
+    month: String(m),
+    issue: '',
+    report_date: todayDisplay(),
+    period_start: ym+'-01',
+    period_end: ym+'-'+String(lastDay).padStart(2,'0'),
+    progress_actual: progressActual,
+    progress_reason: progressReason,
+    visa: {
+      meeting: { count: meetingCount? String(meetingCount):'', brief: meetingBrief },
+      visa:    { count: investCount? String(investCount):'', brief: investBrief },
+      notice:  { count: noticeCount? String(noticeCount):'', brief: noticeBrief },
+      report:  { count: '', brief: '' }
+    },
+    impl_text: '', work_text: '', issue_text: '', next_text: '',
+    attachment: '有关统计表、图片等'
+  };
+}
+function renderMonthlyTable(d){
+  const B='border:1px solid #9aa6b2; border-collapse:collapse;';
+  const th='background:#dce6f1; font-weight:700; text-align:center; padding:7px 8px;';
+  const td='padding:7px 8px; font-size:13px; vertical-align:middle;';
+  const PL='（由总监理工程师填写）';
+  const vcell=(t, cls='')=>`<td style="${td} ${B} ${cls}">${t}</td>`;
+  const vh=(t, rs=1)=>`<th style="${th}" rowspan="${rs}">${t}</th>`;
+  const issueNo = d.issue? ('（第 '+d.issue+' 期）') : '（第　　期）';
+  const visa=d.visa||{};
+  const vrow=(name, obj)=>{
+    const o=obj||{}; const cnt=o.count||'';
+    return vcell(name,'font-weight:700;') + vcell(cnt? (cnt+' 份'):'','text-align:center;') + vcell('内容简要','text-align:center;') + vcell(esc(o.brief||PL));
+  };
+  // 工程概况与本月主要情况表 (8 行 × 7 列，与官方模板一致)
+  const t0=`<table style="width:100%; ${B} font-size:13px; margin:8px 0 16px">
+    <tr>${vh('工程名称')}<td style="${td} ${B}" colspan="3">${esc(d.project_name||'—')}</td>${vh('设计单位')}${vcell(esc(d.design_party||'—'))}</tr>
+    <tr>${vh('建设单位')}<td style="${td} ${B}" colspan="3">${esc(d.build_party||'—')}</td>${vh('施工单位')}${vcell(esc(d.construct_party||'—'))}</tr>
+    <tr>${vh('本月工程进度',2)}${vcell('实际完成','font-weight:700;')}<td style="${td} ${B}" colspan="5">${esc(d.progress_actual||PL)}</td></tr>
+    <tr>${vcell('原因、分析','font-weight:700;')}<td style="${td} ${B}" colspan="5">${esc(d.progress_reason||PL)}</td></tr>
+    <tr>${vh('工程签证情况',4)}${vrow('专题会议纪要', visa.meeting)}</tr>
+    <tr>${vrow('工程量签证', visa.visa)}</tr>
+    <tr>${vrow('向施工单位发出的通知、指示、指令', visa.notice)}</tr>
+    <tr>${vrow('施工单位提出的各种报告', visa.report)}</tr>
+  </table>`;
+  const box=(sections)=>`<div style="border:1px solid #9aa6b2; padding:12px 14px; margin:0 0 14px; font-size:13px; line-height:1.9">
+    ${sections.map((s,i)=>`<div style="${i?'margin-top:12px':''}"><div style="font-weight:700; font-size:14px; margin-bottom:4px">${esc(s[0])}</div><div style="white-space:pre-wrap">${esc(s[1]||PL)}</div></div>`).join('')}
+  </div>`;
+  const periodTxt = (d.period_start&&d.period_end)? (d.period_start+' 至 '+d.period_end) : '年　　月　　日 至 　　　年　　月　　日';
+  return `
+    <div style="text-align:center; font-weight:800; font-size:22px; letter-spacing:6px; margin-bottom:2px">监 理 月 报</div>
+    <div style="text-align:center; color:#555; margin-bottom:12px; font-size:14px">${issueNo}</div>
+    ${t0}
+    <div style="font-weight:700; font-size:13px; margin:4px 0 6px">主要内容：</div>
+    <div style="font-size:13px; line-height:1.9; margin-bottom:10px; padding-left:8px">
+      <div>本月工程实施情况</div>
+      <div>本月监理工作情况</div>
+      <div>本月施工中存在的问题及处理情况</div>
+      <div>下月监理工作重点</div>
+    </div>
+    ${box([['本月工程实施情况：', d.impl_text],['本月监理工作情况：', d.work_text]])}
+    ${box([['本月施工中存在的问题及处理情况：', d.issue_text],['下月监理工作重点：', d.next_text],['附件：', d.attachment]])}
+    <div style="margin-top:18px; font-size:13px; line-height:2.2">
+      <div>总监理工程师（签字）：________________</div>
+      <div>项目监理机构（印章）：________________</div>
+      <div style="text-align:center; margin-top:6px">${periodTxt}</div>
+    </div>`;
+}
+function bindMonthlyReport(){
+  document.getElementById('genMth')?.addEventListener('click', ()=>{
+    const pid=val('mthProj'); if(!pid){ toast('请先选择项目'); return; }
+    const data=monthlyReportData(pid);
+    window.__mthData=data;
+    document.getElementById('mthPreview').innerHTML=renderMonthlyTable(data);
+  });
+  document.getElementById('expMthDocx')?.addEventListener('click', exportMonthlyDocx);
+  document.getElementById('expMthJson')?.addEventListener('click', ()=>{
+    const data=window.__mthData; if(!data){ toast('请先生成月报预览'); return; }
+    download(JSON.stringify(data,null,2), monthlyBase(data)+'.input.json');
+    toast('已下载生成配置');
+  });
+}
+function exportMonthlyDocx(){
+  const data=window.__mthData; if(!data){ toast('请先生成月报预览'); return; }
+  const base=monthlyBase(data);
+  if(IS_DESKTOP && window.fsBridge && window.fsBridge.generateDocx){
+    toast('正在生成 DOCX…');
+    const outDir = pathJoin(window.fsBridge.getDataDir(), 'output');
+    window.fsBridge.generateDocx('monthly', data, outDir, base)
+      .then(r=>{ if(r.success){ toast('已生成并打开 '+base+'.docx'); } else { toast('生成失败：'+r.error); } })
+      .catch(e=>{ toast('生成异常：'+e.message); });
+  } else {
+    confirmX('网页版/预览环境无法直接生成 Word。请在桌面版 exe 中点击导出，或下载生成配置后用本地脚本生成。', ()=>{
+      download(JSON.stringify(data,null,2), base+'.input.json');
+      toast('已下载生成配置');
+    }, '仍要下载配置');
+  }
+}
+function monthlyBase(data){
+  return '监理月报_'+data.year+'年'+data.month+'月_'+(data.project_name||'').replace(/[\\/:*?"<>|]/g,'_');
+}
 function bindLogPage(type){
   const isDay = type==='day';
   renderTmplSelect(); renderTmplFields();
@@ -2319,7 +2623,7 @@ function bindLogPage(type){
   document.getElementById('clearDemo')?.addEventListener('click',clearDemo);
 }
 function bindLog(){ bindLogPage('day'); }
-function bindMonthly(){ bindLogPage('month'); }
+function bindMonthly(){ bindMonthlyReport(); }
 /* ---- 模板库（内置 + 自定义） ---- */
 function defaultTmpl(){
   return {
@@ -2626,7 +2930,7 @@ function acceptHTML(){
     <button class="btn ghost" id="genEval">生成质量评估报告</button>
     ${PERM[ROLE].exportDoc?'<button class="btn ghost" id="expEval">导出报告</button>':''}
   </div>`;
-  const list=load(K.accept,[]);
+  const list=load(K.check,[]);
   if(list.length===0) h+=`<div class="empty-hint">暂无验收记录</div>`;
   else h+=`<div class="grid grid-2">`+list.map(a=>{
     const ok=a.result==='通过';
@@ -2671,14 +2975,14 @@ function acceptFormHTML(a){
       <button class="btn" onclick="saveAccept()">${isEdit?'保存修改':'保存记录'}</button>`;
 }
 function editAccept(id){
-  const a=load(K.accept,[]).find(x=>x.id===id);
+  const a=load(K.check,[]).find(x=>x.id===id);
   if(!a){ toast('记录不存在'); return; }
   showModal(acceptFormHTML(a));
 }
 function saveAccept(){
   const pid=val('aProj'); if(!pid){ toast('请选择项目'); return; }
   const editId=val('aId');
-  const list=load(K.accept,[]);
+  const list=load(K.check,[]);
   if(editId){
     const idx=list.findIndex(x=>x.id===editId);
     if(idx<0){ toast('记录不存在'); return; }
@@ -2689,13 +2993,13 @@ function saveAccept(){
     save(K.accept,list); closeModal(); toast('已保存'); render('accept');
   }
 }
-function viewAccept(id){ const a=load(K.accept,[]).find(x=>x.id===id); if(a) showModal(`<button class="close" onclick="closeModal()">×</button><h3>${esc(a.item)} · ${a.result}</h3><div class="logbox">项目：${projName(a.proj)}\n日期：${a.date}\n组织形式：${a.group}\n结论：${a.result}\n记录：${a.note||'—'}</div>`); }
-function delAccept(id){ confirmX('确认删除该验收记录？', ()=>{ save(K.accept, load(K.accept,[]).filter(x=>x.id!==id)); toast('已删除'); render('accept'); }); }
+function viewAccept(id){ const a=load(K.check,[]).find(x=>x.id===id); if(a) showModal(`<button class="close" onclick="closeModal()">×</button><h3>${esc(a.item)} · ${a.result}</h3><div class="logbox">项目：${projName(a.proj)}\n日期：${a.date}\n组织形式：${a.group}\n结论：${a.result}\n记录：${a.note||'—'}</div>`); }
+function delAccept(id){ confirmX('确认删除该验收记录？', ()=>{ save(K.accept, load(K.check,[]).filter(x=>x.id!==id)); toast('已删除'); render('accept'); }); }
 function genEval(){
-  const pid=val('aProj')|| (load(K.accept,[])[0]&&load(K.accept,[])[0].proj) || (projList()[0]&&projList()[0].id);
+  const pid=val('aProj')|| (load(K.check,[])[0]&&load(K.check,[])[0].proj) || (projList()[0]&&projList()[0].id);
   if(!pid){ toast('请先新增验收记录或项目'); return; }
   const proj=projList().find(p=>p.id===pid);
-  const acc=load(K.accept,[]).filter(x=>x.proj===pid);
+  const acc=load(K.check,[]).filter(x=>x.proj===pid);
   const ins=load(K.insp,[]).filter(x=>x.proj===pid); const sides=load(K.side,[]).filter(x=>x.proj===pid);
   const samples=load(K.sample,[]).filter(x=>x.proj===pid); const mats=load(K.material,[]).filter(x=>x.proj===pid);
   const pass=acc.filter(x=>x.result==='通过'||x.result==='整改后通过').length;
@@ -2711,6 +3015,365 @@ ${ins.filter(x=>x.status!=='已闭环').map(x=>'　·'+x.spot+'：'+x.problem).j
 总监理工程师：____________　　日期：${todayDisplay()}`;
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>工程质量评估报告（预览）</h3><div class="logbox" id="evalBox">${esc(text)}</div><div class="btn-row" style="margin-top:10px"><button class="btn" onclick="closeModal()">关闭</button></div>`);
 }
+
+
+/* ================= 检查验收 ================= */
+const CHECK_TYPES = ['检验批','隐蔽','分项','分部','单位','预验收','竣工'];
+const CHECK_RESULTS = ['合格','不合格','整改后合格'];
+function checkHTML(){
+  const list = load(K.check, []);
+  const type = window.__checkType || '全部';
+  const kw = (window.__checkSearch || '').toLowerCase();
+  let filtered = list;
+  if(type !== '全部') filtered = filtered.filter(x => (x.type || '检验批') === type);
+  if(kw) filtered = filtered.filter(x => ((x.content||'')+(x.part||'')).toLowerCase().includes(kw));
+  let h = `<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>检查验收</div>`;
+  h += `<div class="btn-row"><button class="btn" id="addCheck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新增检查验收</button></div>`;
+  h += `<div class="filters" style="margin:10px 0;display:flex;gap:10px;flex-wrap:wrap;">
+    <select id="checkTypeFilter" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);">
+      <option value="全部">全部类型</option>
+      ${CHECK_TYPES.map(t => `<option value="${t}" ${t===type?'selected':''}>${t}</option>`).join('')}
+    </select>
+    <input id="checkSearch" value="${esc(window.__checkSearch||'')}" placeholder="搜索内容/部位" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);min-width:200px;">
+  </div>`;
+  if(filtered.length === 0) h += `<div class="empty-hint">暂无检查验收记录</div>`;
+  h += `<div class="card-list">`;
+  filtered.forEach(x => {
+    h += `<div class="card">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;"><b>${esc(x.type || '检验批')}</b><span style="color:${x.result==='合格'?'var(--green)':x.result==='整改后合格'?'var(--amber)':'var(--red)'};font-weight:600;">${esc(x.result)}</span></div>
+      <div style="font-size:13px;color:var(--sub);margin:6px 0;"><b>日期：</b>${esc(x.date)} · <b>部位：</b>${esc(x.part||'')}</div>
+      <div style="font-size:13px;color:var(--ink-1);">${esc(x.content||'')}</div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn sm" data-editcheck="${x.id}">编辑</button>
+        <button class="btn sm secondary" data-delcheck="${x.id}">删除</button>
+      </div>
+    </div>`;
+  });
+  h += `</div>`;
+  return h;
+}
+function bindCheck(){
+  document.getElementById('addCheck')?.addEventListener('click',()=>{ showModal(checkFormHTML()); });
+  document.getElementById('checkTypeFilter')?.addEventListener('change',e=>{ window.__checkType=e.target.value; render('check'); });
+  document.getElementById('checkSearch')?.addEventListener('input',e=>{ window.__checkSearch=e.target.value; render('check'); });
+  document.querySelectorAll('[data-editcheck]').forEach(b=>b.onclick=()=>editCheck(b.dataset.editcheck));
+  document.querySelectorAll('[data-delcheck]').forEach(b=>b.onclick=()=>delCheck(b.dataset.delcheck));
+}
+function checkFormHTML(x){
+  const isEdit = !!x;
+  const type = x? (x.type || '检验批') : '检验批';
+  const date = x? x.date : todayDisplay();
+  const content = x? esc(x.content||'') : '';
+  const part = x? esc(x.part||'') : '';
+  const result = x? (x.result || '合格') : '合格';
+  const typeOpts = CHECK_TYPES.map(t=>`<option value="${t}" ${t===type?'selected':''}>${t}</option>`).join('');
+  const resultOpts = CHECK_RESULTS.map(r=>`<option value="${r}" ${r===result?'selected':''}>${r}</option>`).join('');
+  return `<button class="close" onclick="closeModal()">×</button><h3>${isEdit?'编辑':'新增'}检查验收</h3>
+    <input type="hidden" id="ckId" value="${x?x.id:''}">
+    <div class="field"><label>验收类型</label><select id="ckType">${typeOpts}</select></div>
+    <div class="field"><label>验收日期</label><input id="ckDate" type="date" value="${date}"></div>
+    <div class="field"><label>验收内容</label><input id="ckContent" value="${content}" placeholder="如 钢筋隐蔽验收"></div>
+    <div class="field"><label>验收部位</label><input id="ckPart" value="${part}" placeholder="如 1#楼二层梁板"></div>
+    <div class="field"><label>验收结论</label><select id="ckResult">${resultOpts}</select></div>
+    <button class="btn" onclick="saveCheck()">${isEdit?'保存修改':'保存记录'}</button>`;
+}
+function editCheck(id){ const x=load(K.check,[]).find(i=>i.id===id); if(!x){toast('记录不存在');return;} showModal(checkFormHTML(x)); }
+function saveCheck(){
+  const id=val('ckId'); const type=val('ckType'); const date=val('ckDate'); const content=val('ckContent'); const part=val('ckPart'); const result=val('ckResult');
+  if(!content){toast('请填写验收内容');return;}
+  const list=load(K.check,[]); const d={type,date,content,part,result};
+  if(id){ Object.assign(list.find(x=>x.id===id), d); } else { list.unshift({id:uid(),...d}); }
+  save(K.check,list); closeModal(); toast('已保存'); render('check');
+}
+function delCheck(id){ confirmX('确认删除该检查验收记录？',()=>{ save(K.check, load(K.check,[]).filter(x=>x.id!==id)); toast('已删除'); render('check'); }); }
+
+/* ================= 机械设备 ================= */
+const MACHINE_RESULTS = ['合格','不合格','整改后合格'];
+function machineHTML(){
+  const list = load(K.machine, []);
+  const kw = (window.__machineSearch || '').toLowerCase();
+  let filtered = list;
+  if(kw) filtered = filtered.filter(x => ((x.name||'')+(x.cert||'')).toLowerCase().includes(kw));
+  let h = `<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>机械设备</div>`;
+  h += `<div class="btn-row"><button class="btn" id="addMachine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新增机械设备</button></div>`;
+  h += `<div class="filters" style="margin:10px 0;"><input id="machineSearch" value="${esc(window.__machineSearch||'')}" placeholder="搜索名称/合格证" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);min-width:240px;"></div>`;
+  if(filtered.length === 0) h += `<div class="empty-hint">暂无机械设备记录</div>`;
+  h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>进场日期</th><th>名称</th><th>合格证</th><th>验收结论</th><th>操作</th></tr></thead><tbody>`;
+  filtered.forEach(x => {
+    h += `<tr>
+      <td>${esc(x.date)}</td>
+      <td>${esc(x.name||'')}</td>
+      <td>${esc(x.cert||'')}</td>
+      <td style="color:${x.result==='合格'?'var(--green)':x.result==='整改后合格'?'var(--amber)':'var(--red)'};font-weight:600;">${esc(x.result||'')}</td>
+      <td><button class="btn sm" data-editmachine="${x.id}">编辑</button> <button class="btn sm secondary" data-delmachine="${x.id}">删除</button></td>
+    </tr>`;
+  });
+  h += `</tbody></table></div>`;
+  return h;
+}
+function bindMachine(){
+  document.getElementById('addMachine')?.addEventListener('click',()=>{ showModal(machineFormHTML()); });
+  document.getElementById('machineSearch')?.addEventListener('input',e=>{ window.__machineSearch=e.target.value; render('machine'); });
+  document.querySelectorAll('[data-editmachine]').forEach(b=>b.onclick=()=>editMachine(b.dataset.editmachine));
+  document.querySelectorAll('[data-delmachine]').forEach(b=>b.onclick=()=>delMachine(b.dataset.delmachine));
+}
+function machineFormHTML(x){
+  const isEdit = !!x;
+  const date = x? x.date : todayDisplay();
+  const name = x? esc(x.name||'') : '';
+  const cert = x? esc(x.cert||'') : '';
+  const result = x? (x.result || '合格') : '合格';
+  const resultOpts = MACHINE_RESULTS.map(r=>`<option value="${r}" ${r===result?'selected':''}>${r}</option>`).join('');
+  return `<button class="close" onclick="closeModal()">×</button><h3>${isEdit?'编辑':'新增'}机械设备</h3>
+    <input type="hidden" id="mcId" value="${x?x.id:''}">
+    <div class="field"><label>进场日期</label><input id="mcDate" type="date" value="${date}"></div>
+    <div class="field"><label>设备名称</label><input id="mcName" value="${name}" placeholder="如 塔式起重机 TC5610"></div>
+    <div class="field"><label>合格证编号</label><input id="mcCert" value="${cert}" placeholder="合格证/备案证编号"></div>
+    <div class="field"><label>验收结论</label><select id="mcResult">${resultOpts}</select></div>
+    <button class="btn" onclick="saveMachine()">${isEdit?'保存修改':'保存记录'}</button>`;
+}
+function editMachine(id){ const x=load(K.machine,[]).find(i=>i.id===id); if(!x){toast('记录不存在');return;} showModal(machineFormHTML(x)); }
+function saveMachine(){
+  const id=val('mcId'); const date=val('mcDate'); const name=val('mcName'); const cert=val('mcCert'); const result=val('mcResult');
+  if(!name){toast('请填写设备名称');return;}
+  const list=load(K.machine,[]); const d={date,name,cert,result};
+  if(id){ Object.assign(list.find(x=>x.id===id), d); } else { list.unshift({id:uid(),...d}); }
+  save(K.machine,list); closeModal(); toast('已保存'); render('machine');
+}
+function delMachine(id){ confirmX('确认删除该机械设备记录？',()=>{ save(K.machine, load(K.machine,[]).filter(x=>x.id!==id)); toast('已删除'); render('machine'); }); }
+
+/* ================= 特种作业 ================= */
+const SPECIAL_TYPES = ['电工','焊工','架子工','起重信号司索工','起重机械司机','高处作业','其他'];
+function specialHTML(){
+  const list = load(K.special, []);
+  const type = window.__specialType || '全部';
+  const kw = (window.__specialSearch || '').toLowerCase();
+  let filtered = list;
+  if(type !== '全部') filtered = filtered.filter(x => (x.category || '其他') === type);
+  if(kw) filtered = filtered.filter(x => ((x.name||'')+(x.category||'')).toLowerCase().includes(kw));
+  let h = `<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>特种作业</div>`;
+  h += `<div class="btn-row"><button class="btn" id="addSpecial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新增特种作业人员</button></div>`;
+  h += `<div class="filters" style="margin:10px 0;display:flex;gap:10px;flex-wrap:wrap;">
+    <select id="specialTypeFilter" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);">
+      <option value="全部">全部类型</option>
+      ${SPECIAL_TYPES.map(t => `<option value="${t}" ${t===type?'selected':''}>${t}</option>`).join('')}
+    </select>
+    <input id="specialSearch" value="${esc(window.__specialSearch||'')}" placeholder="搜索姓名" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);min-width:200px;">
+  </div>`;
+  if(filtered.length === 0) h += `<div class="empty-hint">暂无特种作业人员记录</div>`;
+  h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>人员姓名</th><th>进场日期</th><th>特种分类</th><th>证书编号</th><th>操作</th></tr></thead><tbody>`;
+  filtered.forEach(x => {
+    h += `<tr>
+      <td>${esc(x.name||'')}</td>
+      <td>${esc(x.date)}</td>
+      <td>${esc(x.category||'')}</td>
+      <td>${esc(x.certNo||'')}</td>
+      <td><button class="btn sm" data-editspecial="${x.id}">编辑</button> <button class="btn sm secondary" data-delspecial="${x.id}">删除</button></td>
+    </tr>`;
+  });
+  h += `</tbody></table></div>`;
+  return h;
+}
+function bindSpecial(){
+  document.getElementById('addSpecial')?.addEventListener('click',()=>{ showModal(specialFormHTML()); });
+  document.getElementById('specialTypeFilter')?.addEventListener('change',e=>{ window.__specialType=e.target.value; render('special'); });
+  document.getElementById('specialSearch')?.addEventListener('input',e=>{ window.__specialSearch=e.target.value; render('special'); });
+  document.querySelectorAll('[data-editspecial]').forEach(b=>b.onclick=()=>editSpecial(b.dataset.editspecial));
+  document.querySelectorAll('[data-delspecial]').forEach(b=>b.onclick=()=>delSpecial(b.dataset.delspecial));
+}
+function specialFormHTML(x){
+  const isEdit = !!x;
+  const name = x? esc(x.name||'') : '';
+  const date = x? x.date : todayDisplay();
+  const category = x? (x.category || '其他') : '其他';
+  const certNo = x? esc(x.certNo||'') : '';
+  const typeOpts = SPECIAL_TYPES.map(t=>`<option value="${t}" ${t===category?'selected':''}>${t}</option>`).join('');
+  return `<button class="close" onclick="closeModal()">×</button><h3>${isEdit?'编辑':'新增'}特种作业人员</h3>
+    <input type="hidden" id="spId" value="${x?x.id:''}">
+    <div class="field"><label>人员姓名</label><input id="spName" value="${name}" placeholder="如 张三"></div>
+    <div class="field"><label>进场日期</label><input id="spDate" type="date" value="${date}"></div>
+    <div class="field"><label>特种分类</label><select id="spCategory">${typeOpts}</select></div>
+    <div class="field"><label>证书编号</label><input id="spCertNo" value="${certNo}" placeholder="如 T320101199001011234"></div>
+    <button class="btn" onclick="saveSpecial()">${isEdit?'保存修改':'保存记录'}</button>`;
+}
+function editSpecial(id){ const x=load(K.special,[]).find(i=>i.id===id); if(!x){toast('记录不存在');return;} showModal(specialFormHTML(x)); }
+function saveSpecial(){
+  const id=val('spId'); const name=val('spName'); const date=val('spDate'); const category=val('spCategory'); const certNo=val('spCertNo');
+  if(!name){toast('请填写人员姓名');return;}
+  const list=load(K.special,[]); const d={name,date,category,certNo};
+  if(id){ Object.assign(list.find(x=>x.id===id), d); } else { list.unshift({id:uid(),...d}); }
+  save(K.special,list); closeModal(); toast('已保存'); render('special');
+}
+function delSpecial(id){ confirmX('确认删除该特种作业人员记录？',()=>{ save(K.special, load(K.special,[]).filter(x=>x.id!==id)); toast('已删除'); render('special'); }); }
+
+/* ================= 方案审查 ================= */
+const SCHEME_RESULTS = ['通过','修改后通过','不通过'];
+function schemeHTML(){
+  const list = load(K.scheme, []);
+  const kw = (window.__schemeSearch || '').toLowerCase();
+  let filtered = list;
+  if(kw) filtered = filtered.filter(x => ((x.name||'')+(x.result||'')).toLowerCase().includes(kw));
+  let h = `<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 12h8M8 16h5"/></svg>方案审查</div>`;
+  h += `<div class="btn-row"><button class="btn" id="addScheme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新增方案审查</button></div>`;
+  h += `<div class="filters" style="margin:10px 0;"><input id="schemeSearch" value="${esc(window.__schemeSearch||'')}" placeholder="搜索方案名称/结论" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);min-width:240px;"></div>`;
+  if(filtered.length === 0) h += `<div class="empty-hint">暂无方案审查记录</div>`;
+  h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>报审日期</th><th>方案名称</th><th>审核结论</th><th>操作</th></tr></thead><tbody>`;
+  filtered.forEach(x => {
+    h += `<tr>
+      <td>${esc(x.date)}</td>
+      <td>${esc(x.name||'')}</td>
+      <td style="color:${x.result==='通过'?'var(--green)':x.result==='修改后通过'?'var(--amber)':'var(--red)'};font-weight:600;">${esc(x.result||'')}</td>
+      <td><button class="btn sm" data-editscheme="${x.id}">编辑</button> <button class="btn sm secondary" data-delscheme="${x.id}">删除</button></td>
+    </tr>`;
+  });
+  h += `</tbody></table></div>`;
+  return h;
+}
+function bindScheme(){
+  document.getElementById('addScheme')?.addEventListener('click',()=>{ showModal(schemeFormHTML()); });
+  document.getElementById('schemeSearch')?.addEventListener('input',e=>{ window.__schemeSearch=e.target.value; render('scheme'); });
+  document.querySelectorAll('[data-editscheme]').forEach(b=>b.onclick=()=>editScheme(b.dataset.editscheme));
+  document.querySelectorAll('[data-delscheme]').forEach(b=>b.onclick=()=>delScheme(b.dataset.delscheme));
+}
+function schemeFormHTML(x){
+  const isEdit = !!x;
+  const date = x? x.date : todayDisplay();
+  const name = x? esc(x.name||'') : '';
+  const result = x? (x.result || '通过') : '通过';
+  const resultOpts = SCHEME_RESULTS.map(r=>`<option value="${r}" ${r===result?'selected':''}>${r}</option>`).join('');
+  return `<button class="close" onclick="closeModal()">×</button><h3>${isEdit?'编辑':'新增'}方案审查</h3>
+    <input type="hidden" id="scId" value="${x?x.id:''}">
+    <div class="field"><label>报审日期</label><input id="scDate" type="date" value="${date}"></div>
+    <div class="field"><label>方案名称</label><input id="scName" value="${name}" placeholder="如 深基坑支护专项施工方案"></div>
+    <div class="field"><label>审核结论</label><select id="scResult">${resultOpts}</select></div>
+    <button class="btn" onclick="saveScheme()">${isEdit?'保存修改':'保存记录'}</button>`;
+}
+function editScheme(id){ const x=load(K.scheme,[]).find(i=>i.id===id); if(!x){toast('记录不存在');return;} showModal(schemeFormHTML(x)); }
+function saveScheme(){
+  const id=val('scId'); const date=val('scDate'); const name=val('scName'); const result=val('scResult');
+  if(!name){toast('请填写方案名称');return;}
+  const list=load(K.scheme,[]); const d={date,name,result};
+  if(id){ Object.assign(list.find(x=>x.id===id), d); } else { list.unshift({id:uid(),...d}); }
+  save(K.scheme,list); closeModal(); toast('已保存'); render('scheme');
+}
+function delScheme(id){ confirmX('确认删除该方案审查记录？',()=>{ save(K.scheme, load(K.scheme,[]).filter(x=>x.id!==id)); toast('已删除'); render('scheme'); }); }
+
+/* ================= AI 助手 ================= */
+const AI_PROVIDERS = [
+  {key:'openai', name:'OpenAI', baseURL:'https://api.openai.com/v1', model:'gpt-4o-mini'},
+  {key:'deepseek', name:'DeepSeek', baseURL:'https://api.deepseek.com/v1', model:'deepseek-chat'},
+  {key:'qwen', name:'通义千问', baseURL:'https://dashscope.aliyuncs.com/compatible-mode/v1', model:'qwen-turbo'},
+  {key:'moonshot', name:'Moonshot', baseURL:'https://api.moonshot.cn/v1', model:'moonshot-v1-8k'},
+  {key:'zhipu', name:'智谱 AI', baseURL:'https://open.bigmodel.cn/api/paas/v4', model:'glm-4-flash'},
+  {key:'siliconflow', name:'SiliconFlow', baseURL:'https://api.siliconflow.cn/v1', model:'Qwen/Qwen2.5-7B-Instruct'},
+  {key:'custom', name:'自定义', baseURL:'', model:''}
+];
+function aiDefaultConfig(){
+  return { provider:'deepseek', baseURL:AI_PROVIDERS[1].baseURL, model:AI_PROVIDERS[1].model, apiKey:'', temperature:0.7, systemPrompt:'你是一名经验丰富的建筑工程监理工程师，熟悉 GB/T 50319-2013、施工质量验收规范及安全监理实务。请用专业、简洁、可操作的语言回答用户问题。' };
+}
+function aiGetConfig(){ return load(K.aiConfig, aiDefaultConfig()); }
+function aiHTML(){
+  const cfg = aiGetConfig();
+  const history = load(K.aiHistory, []);
+  let h = `<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>AI 助手</div>`;
+  h += `<div style="display:flex;gap:16px;align-items:stretch;min-height:60vh;">`;
+  // 左侧：对话
+  h += `<div style="flex:1;display:flex;flex-direction:column;gap:12px;">`;
+  h += `<div id="aiChatBox" style="flex:1;background:var(--panel-1);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;overflow-y:auto;max-height:60vh;">`;
+  if(history.length===0){
+    h += `<div class="empty-hint" style="text-align:center;margin-top:40px;">开始与 AI 对话，可询问监理规范、验收标准、安全要点等问题</div>`;
+  } else {
+    history.forEach(m => {
+      const isUser = m.role === 'user';
+      h += `<div style="display:flex;justify-content:${isUser?'flex-end':'flex-start'};margin:8px 0;"><div style="max-width:80%;padding:10px 14px;border-radius:14px;background:${isUser?'var(--accent)':'var(--panel-2)'};color:${isUser?'#fff':'var(--ink-1)'};font-size:13.5px;line-height:1.6;white-space:pre-wrap;">${esc(m.content||'')}</div></div>`;
+    });
+  }
+  h += `</div>`;
+  h += `<div style="display:flex;gap:10px;">`;
+  h += `<textarea id="aiInput" rows="2" placeholder="输入问题，按 Ctrl+Enter 发送" style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);resize:vertical;font-family:inherit;"></textarea>`;
+  h += `<button class="btn" id="aiSend" style="align-self:stretch;padding:0 18px;">发送</button>`;
+  h += `</div>`;
+  if(!IS_DESKTOP) h += `<div class="hint" style="color:var(--amber);">⚠️ 网页版直接调用 API，API Key 会暴露在网络请求中；桌面版将通过本地代理转发。</div>`;
+  h += `</div>`;
+  // 右侧：设置
+  h += `<div style="width:320px;background:var(--panel-1);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:12px;">`;
+  h += `<h4 style="margin:0;color:var(--ink-1);">模型设置</h4>`;
+  const provOpts = AI_PROVIDERS.map(p=>`<option value="${p.key}" ${cfg.provider===p.key?'selected':''}>${p.name}</option>`).join('');
+  h += `<div class="field" style="margin:0;"><label>模型供应商</label><select id="aiProvider">${provOpts}</select></div>`;
+  h += `<div class="field" style="margin:0;"><label>Base URL</label><input id="aiBaseURL" value="${esc(cfg.baseURL||'')}" placeholder="https://api.example.com/v1"></div>`;
+  h += `<div class="field" style="margin:0;"><label>模型名称</label><input id="aiModel" value="${esc(cfg.model||'')}" placeholder="如 gpt-4o-mini"></div>`;
+  h += `<div class="field" style="margin:0;"><label>API Key</label><input id="aiApiKey" type="password" value="${esc(cfg.apiKey||'')}" placeholder="sk-... 或自定义 key"></div>`;
+  h += `<div class="field" style="margin:0;"><label>温度 (temperature)</label><input id="aiTemp" type="number" min="0" max="2" step="0.1" value="${cfg.temperature}"></div>`;
+  h += `<div class="field" style="margin:0;"><label>系统提示词</label><textarea id="aiSystem" rows="4" placeholder="设定 AI 角色">${esc(cfg.systemPrompt||'')}</textarea></div>`;
+  h += `<div style="display:flex;gap:8px;"><button class="btn" id="aiSaveCfg" style="flex:1;">保存设置</button><button class="btn secondary" id="aiClearChat" style="flex:1;">清空对话</button></div>`;
+  h += `</div>`;
+  h += `</div>`;
+  return h;
+}
+function bindAI(){
+  const box = document.getElementById('aiChatBox');
+  if(box) box.scrollTop = box.scrollHeight;
+  document.getElementById('aiSend')?.addEventListener('click', aiSend);
+  document.getElementById('aiInput')?.addEventListener('keydown', e=>{ if(e.ctrlKey && e.key==='Enter') aiSend(); });
+  document.getElementById('aiSaveCfg')?.addEventListener('click', aiSaveConfig);
+  document.getElementById('aiClearChat')?.addEventListener('click', ()=>{ confirmX('确认清空全部对话记录？',()=>{ save(K.aiHistory, []); render('ai'); }); });
+  document.getElementById('aiProvider')?.addEventListener('change', e=>{
+    const p = AI_PROVIDERS.find(x=>x.key===e.target.value);
+    if(p && p.key!=='custom'){ document.getElementById('aiBaseURL').value=p.baseURL; document.getElementById('aiModel').value=p.model; }
+  });
+}
+function aiSaveConfig(){
+  const cfg = {
+    provider: val('aiProvider'),
+    baseURL: val('aiBaseURL').replace(/\/$/,''),
+    model: val('aiModel'),
+    apiKey: val('aiApiKey'),
+    temperature: parseFloat(val('aiTemp')) || 0.7,
+    systemPrompt: val('aiSystem')
+  };
+  save(K.aiConfig, cfg);
+  toast('设置已保存');
+}
+async function aiSend(){
+  const input = document.getElementById('aiInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const cfg = aiGetConfig();
+  if(!cfg.apiKey){ toast('请先填写 API Key 并保存设置'); return; }
+  if(!cfg.baseURL || !cfg.model){ toast('请填写 Base URL 和模型名称'); return; }
+  const history = load(K.aiHistory, []);
+  history.push({role:'user', content:text, time:Date.now()});
+  save(K.aiHistory, history);
+  input.value = '';
+  render('ai');
+  // 请求 AI
+  try {
+    let reply = '';
+    if(IS_DESKTOP && window.fsBridge && window.fsBridge.aiChat){
+      reply = await window.fsBridge.aiChat({ baseURL:cfg.baseURL, model:cfg.model, apiKey:cfg.apiKey, temperature:cfg.temperature, systemPrompt:cfg.systemPrompt, messages:history.slice(-20).map(m=>({role:m.role, content:m.content})) });
+    } else {
+      reply = await aiChatDirect({ ...cfg, messages:history.slice(-20).map(m=>({role:m.role, content:m.content})) });
+    }
+    history.push({role:'assistant', content:reply, time:Date.now()});
+    save(K.aiHistory, history);
+    render('ai');
+  } catch(err){
+    history.push({role:'assistant', content:'请求失败：'+err.message, time:Date.now()});
+    save(K.aiHistory, history);
+    render('ai');
+    toast('AI 请求失败');
+  }
+}
+async function aiChatDirect({ baseURL, model, apiKey, temperature, systemPrompt, messages }){
+  const url = baseURL + '/chat/completions';
+  const body = { model, messages: [{role:'system', content:systemPrompt}, ...messages], temperature, stream:false };
+  const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey }, body:JSON.stringify(body) });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.choices?.[0]?.message?.content || '（AI 无返回）';
+}
+
 
 /* ================= 监理例会纪要（清单式） ================= */
 /* 数据结构：{ id, title, fields:[{key,value}], doc:{name,data}, createdAt }
@@ -3072,16 +3735,16 @@ function viewLetter(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) re
 function updLetter(id){ const list=load(K.letter,[]); const l=list.find(x=>x.id===id); if(l){ l.status=val('lStatus2'); save(K.letter,list); closeModal(); toast('已更新'); render('letter'); } }
 function delLetter(id){ confirmX('确认删除该函件登记？', ()=>{ save(K.letter, load(K.letter,[]).filter(x=>x.id!==id)); toast('已删除'); render('letter'); }); }
 
-/* ================= 监理联系单（工作联系单 GB/T 50319） ================= */
+/* ================= 工作联系单（GB/T 50319） ================= */
 function contactHTML(){
-  let h=`<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>监理联系单（工作联系单）</div>`;
+  let h=`<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>工作联系单</div>`;
   h+=`<div class="btn-row">
     <button class="btn" id="addContact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新建联系单</button>
     <button class="btn ghost" id="expContact">导出台账</button>
   </div>`;
   h+=`<div class="hint">按《建设工程监理规范》GB/T 50319-2013 工作联系单格式填写，支持预览与打印。</div>`;
   const list=load(K.letter,[]).filter(x=>x.type==='工作联系单');
-  if(list.length===0) h+=`<div class="empty-hint">暂无监理联系单</div>`;
+  if(list.length===0) h+=`<div class="empty-hint">暂无工作联系单</div>`;
   else {
     h+=`<div class="table-wrap"><table class="tbl"><thead><tr><th>编号</th><th>致（接收单位）</th><th>事由</th><th>日期</th><th>状态</th><th>操作</th></tr></thead><tbody>`;
     list.forEach(l=>{
@@ -3119,7 +3782,7 @@ function contactForm(l){
 }
 function bindContact(){
   document.getElementById('addContact')?.addEventListener('click',()=>showModal(contactForm(null)));
-  document.getElementById('expContact')?.addEventListener('click',()=>{ const l=load(K.letter,[]).filter(x=>x.type==='工作联系单'); if(!l.length){toast('暂无数据');return;} download('监理联系单台账\n'+l.map(x=>[(x.no||''), (x.toUnit||''), x.subject, x.date, x.status].join('｜')).join('\n'),`联系单台账_${todayDisplay()}.txt`); });
+  document.getElementById('expContact')?.addEventListener('click',()=>{ const l=load(K.letter,[]).filter(x=>x.type==='工作联系单'); if(!l.length){toast('暂无数据');return;} download('工作联系单台账\n'+l.map(x=>[(x.no||''), (x.toUnit||''), x.subject, x.date, x.status].join('｜')).join('\n'),`联系单台账_${todayDisplay()}.txt`); });
 }
 function editContact(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) return; showModal(contactForm(l)); }
 function saveContact(id){
@@ -3193,7 +3856,7 @@ function printContact(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) 
 function defaultNoticeCfg(){
   const p=load(K.proj,[])[0];
   return { project_name: p?p.name:"北星小学东校区二期扩建工程",
-    supervisor_name: unitName('监理单位') || "北星小学项目监理部", construction_party: unitName('施工单位') || "XX",
+    supervisor_name: unitName('监理单位') || "ZGX", construction_party: unitName('施工单位') || "XX",
     engineer_name:"张总监理工程师" };
 }
 function loadNoticeCfg(){ let c=load(K.ncfg,null); if(c===null || typeof c!=='object' || Array.isArray(c)){ c=defaultNoticeCfg(); save(K.ncfg,c); } return c; }
@@ -3515,7 +4178,7 @@ function saveNoticeCfg(){ const cfg=loadNoticeCfg(); cfg.project_name=val('cProj
 function exportAll(){
   const data={ _type:"监理台备份", _v:2, projects:load(K.proj,[]), inspects:load(K.insp,[]),
     sides:load(K.side,[]), samples:load(K.sample,[]), materials:load(K.material,[]), progress:load(K.progress,[]),
-    invest:load(K.invest,[]), contracts:load(K.contract,[]), plans:load(K.plan,[]), accepts:load(K.accept,[]), meetings:load(K.meeting,[]), letters:load(K.letter,[]), notices:load(K.notice,[]), ncfg:load(K.ncfg,null), forms:load(K.form,[]), logs:load(K.log,[]), tmpls:load(K.tmpl,[]), ts:Date.now() };
+    invest:load(K.invest,[]), contracts:load(K.contract,[]), plans:load(K.plan,[]), accepts:load(K.check,[]), meetings:load(K.meeting,[]), letters:load(K.letter,[]), notices:load(K.notice,[]), ncfg:load(K.ncfg,null), forms:load(K.form,[]), logs:load(K.log,[]), tmpls:load(K.tmpl,[]), ts:Date.now() };
   download(JSON.stringify(data,null,2), `监理台备份_${todayDisplay()}.json`); toast('已导出备份');
 }
 function importAll(){
@@ -3536,8 +4199,96 @@ function showModal(html){
   box.classList.toggle('contact-wide', /class="contact-(sheet|form)"/.test(html));
   document.getElementById('mask').classList.add('show');
 }
-function closeModal(){ document.getElementById('mask').classList.remove('show'); }
+function closeModal(){ const m=document.getElementById('mask'); m.classList.add('closing'); m.classList.remove('show'); setTimeout(()=>m.classList.remove('closing'),200); document.getElementById('modalBox').classList.remove('confirm-modal'); }
 document.getElementById('mask').addEventListener('click',e=>{ if(e.target.id==='mask') closeModal(); });
+/* ===== 交互动效工具（确认 / 删除 / 高亮 / 浮动 / 悬浮） ===== */
+function flashNewRecords(page){
+  const REC_ID_ATTRS = ['data-id','data-close','data-view','data-edit','data-es','data-delside','data-ep','data-ei','data-si','data-ec','data-cc','data-editcheck','data-delcheck','data-editmachine','data-delmachine','data-editspecial','data-delspecial','data-editscheme','data-delscheme'];
+  const seen = (window.__seenIds = window.__seenIds || {});
+  const cur = new Set();
+  const mark = (el)=>{
+    let id = el.getAttribute('data-id');
+    if(!id){
+      const m = (el.getAttribute('onclick')||'').match(/deleteItem\('[^']+','([^']+)'\)/);
+      if(m) id = m[1];
+    }
+    if(!id){ for(const a of REC_ID_ATTRS){ if(el.hasAttribute(a)){ id = el.getAttribute(a); break; } } }
+    if(!id) return;
+    cur.add(id);
+    if(seen[page] && !seen[page].has(id)){
+      const row = el.closest('.card, tr, li, .sm-item, .proj, .file-list li, [data-card], .row-item');
+      if(row){ row.classList.add('flash'); row.addEventListener('animationend', ()=>row.classList.remove('flash'), {once:true}); }
+    }
+  };
+  document.querySelectorAll('#main [data-id], #main [onclick*="deleteItem("], #main ['+REC_ID_ATTRS.join('], #main [')+']').forEach(mark);
+  seen[page] = cur;
+}
+function ensureTopSentinel(main){
+  let s = document.getElementById('topSentinel');
+  if(!s){ s = document.createElement('div'); s.id='topSentinel'; s.style.cssText='height:1px;width:100%;'; main.prepend(s); }
+}
+let __fabObs = null;
+function setupFabTop(){
+  const fab = document.getElementById('fabTop'); if(!fab) return;
+  const main = document.querySelector('.main'); if(!main) return;
+  const update = ()=>{ const st = (main && main.scrollTop) || window.scrollY || 0; fab.classList.toggle('show', st > 420); };
+  main.removeEventListener('scroll', update);
+  window.removeEventListener('scroll', update);
+  main.addEventListener('scroll', update, {passive:true});
+  window.addEventListener('scroll', update, {passive:true});
+  update();
+  fab.onclick = ()=>{ try{ main.scrollTo({top:0, behavior:'smooth'}); }catch(e){} window.scrollTo({top:0, behavior:'smooth'}); };
+}
+/* ④ 新建台账浮钮：按当前模块挂载对应「新建/录入」按钮，空闲上下浮动 */
+const PAGE_ADD = {
+  units:'addProj', inspect:'addInsp', side:'addSide', sample:'addSm', material:'addMt',
+  progress:'addPr', invest:'addInv', contract:'addCt', plan:'addPlan', accept:'addAccept',
+  check:'addCheck', machine:'addMachine', special:'addSpecial', scheme:'addScheme',
+  meeting:'addMeeting', letter:'addLetter', contact:'addContact', notice:'addNotice',
+  forms:'newTmpl'
+};
+function setupFabAdd(page){
+  const fab = document.getElementById('fabAdd'); if(!fab) return;
+  const addId = PAGE_ADD[page];
+  const target = addId ? document.getElementById(addId) : null;
+  if(target){
+    fab.classList.add('show');
+    fab.onclick = ()=>{ try{ target.click(); }catch(e){} };
+  } else {
+    fab.classList.remove('show'); fab.onclick = null;
+  }
+}
+function attachRipple(){
+  document.addEventListener('pointerdown', e=>{
+    const el = e.target.closest('.btn, .nav-item, .chip, .sm-tab');
+    if(!el || el.classList.contains('disabled') || el.disabled) return;
+    const r = el.getBoundingClientRect();
+    if(!r.width) return;
+    const span = document.createElement('span');
+    span.className = 'ripple';
+    const size = Math.max(r.width, r.height);
+    span.style.width = span.style.height = size + 'px';
+    span.style.left = (e.clientX - r.left - size/2) + 'px';
+    span.style.top = (e.clientY - r.top - size/2) + 'px';
+    el.appendChild(span);
+    span.addEventListener('animationend', ()=>span.remove(), {once:true});
+  });
+}
+attachRipple();
+/* ① 主按钮白色光泽 sweep：去处理 / 提交 / 保存 等主操作点击反馈 */
+function attachSweep(){
+  document.addEventListener('click', e=>{
+    const el = e.target.closest('.btn, .ti-do');
+    if(!el) return;
+    if(el.classList.contains('ghost')) return;
+    if(el.closest('.row-confirm')) return; // 确认条内按钮不做 sweep
+    if((el.getAttribute('onclick')||'').indexOf('deleteItem')>=0) return; // 删除走确认条，不做 sweep
+    el.classList.remove('sweep'); void el.offsetWidth; el.classList.add('sweep');
+    el.addEventListener('animationend', ()=>el.classList.remove('sweep'), {once:true});
+  }, true);
+}
+attachSweep();
+
 function val(id){ const el=document.getElementById(id); return el?el.value:''; }
 function goto(p){ try{ render(p); window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ console.error('goto error',p,e); toast('跳转出错：'+e.message); } }
 document.querySelectorAll('.nav-item,.tabbar .tb').forEach(n=>n.onclick=()=>goto(n.dataset.page));
@@ -3545,6 +4296,11 @@ document.querySelectorAll('.nav-item,.tabbar .tb').forEach(n=>n.onclick=()=>goto
 document.getElementById('nav')?.addEventListener('click',e=>{ const n=e.target.closest('.nav-item'); if(n){ goto(n.dataset.page); } });
 document.getElementById('tabbar')?.addEventListener('click',e=>{ const n=e.target.closest('.tb'); if(n){ goto(n.dataset.page); } });
 window.zoom=zoom; window.closeModal=closeModal; window.saveInsp=saveInsp;
+window.saveCheck=saveCheck; window.editCheck=editCheck; window.delCheck=delCheck;
+window.saveMachine=saveMachine; window.editMachine=editMachine; window.delMachine=delMachine;
+window.saveSpecial=saveSpecial; window.editSpecial=editSpecial; window.delSpecial=delSpecial;
+window.saveScheme=saveScheme; window.editScheme=editScheme; window.delScheme=delScheme;
+window.aiSend=aiSend; window.aiSaveConfig=aiSaveConfig;
 window.savePlan=savePlan; window.editPlan=editPlan; window.delPlan=delPlan;
 window.saveAccept=saveAccept; window.viewAccept=viewAccept; window.delAccept=delAccept;
 window.viewMeeting=viewMeeting; window.expMeetingText=expMeetingText; window.delMeeting=delMeeting; window.openMeetingListModal=openMeetingListModal; window.saveMeetingList=saveMeetingList; window.addMeetingField=addMeetingField; window.delMeetingField=delMeetingField; window.onMeetingDoc=onMeetingDoc; window.onMeetingKeyChange=onMeetingKeyChange; window.downloadMeetingDoc=downloadMeetingDoc;

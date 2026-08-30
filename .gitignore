@@ -1,4 +1,4 @@
-# ===== 工地监理总控工作台（桌面便携版）仓库忽略规则 =====
+# ===== 监理总控工作台（Windows 桌面版）仓库忽略规则 =====
 
 # 依赖（electron / electron-builder 等，体积大，install 即可恢复）
 node_modules/

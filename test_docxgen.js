@@ -1,4 +1,4 @@
-// 端到端测试：Node 环境直接调用 docxgen.build 生成四份样例
+// 端到端测试：Node 环境直接调用 docxgen.build 生成四份样例（适用版本 v1.2.0）
 const fs = require('fs');
 const DocxGen = require('./docxgen.js').DocxGen;
 

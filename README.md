@@ -34,7 +34,7 @@
 
 - **前端**：原生 HTML + CSS + JavaScript（单文件内联，无前端构建步骤）
 - **图表**：[ECharts](https://echarts.apache.org/)（内联于 `app.html`）
-- **DOCX 生成**：本地 Python 脚本（`jianli-tongzhidan-docx` skill 的 `generate_jianli_docx.py` / `gen_supervise_form.py`），由 Electron 主进程 `main.js` 调用
+- **DOCX 生成**：纯前端 [docxgen.js](docxgen.js)（OOXML + 自实现 ZIP 打包，零第三方依赖），主进程仅负责落盘并打开文件，无 Python/外部依赖，任何机器可直接使用
 - **桌面壳**：Electron 31（主进程 `main.js` + 预加载 `preload.js`），数据以 JSON 文件持久化到本地 `data/` 目录
 
 ---
@@ -44,7 +44,8 @@
 ```
 监理工作台-桌面版/
 ├── app.html              # 应用页面（全部 UI 与业务逻辑，内联 ECharts）
-├── main.js               # Electron 主进程：窗口 / 数据目录管理 / DOCX 生成
+├── docxgen.js            # 纯前端 DOCX 生成（通知单 / 监理用表 / 监理月报）
+├── main.js               # Electron 主进程：窗口 / 数据目录管理 / DOCX 落盘
 ├── preload.js            # 预加载脚本（contextIsolation 安全桥，暴露 fsBridge）
 ├── package.json          # 桌面版打包配置（electron-builder）
 ├── package-lock.json

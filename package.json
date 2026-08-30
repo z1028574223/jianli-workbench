@@ -25,6 +25,7 @@
       "main.js",
       "preload.js",
       "app.html",
+      "docxgen.js",
       "build/icon.ico"
     ],
     "win": {

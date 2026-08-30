@@ -14,10 +14,12 @@ contextBridge.exposeInMainWorld('fsBridge', {
   setDataDir: () => ipcRenderer.invoke('data:setDir'),
   // 打开数据目录（资源管理器）
   openDataDir: () => ipcRenderer.sendSync('data:openDir'),
-  // 直接生成 DOCX（type: 'notice' | 'form'，payload 为脚本输入数据，outDir 输出目录，baseName 文件名前缀）
-  generateDocx: (type, payload, outDir, baseName) => ipcRenderer.invoke('docx:generate', { type, payload, outDir, baseName }),
+  // 保存渲染进程 docxgen.js 生成的 DOCX 字节（outDir 输出目录，baseName 文件名前缀，data 为 Uint8Array）
+  saveDocx: (outDir, baseName, data) => ipcRenderer.invoke('docx:save', { outDir, baseName, data }),
   // AI 对话代理（config: {baseURL, model, apiKey, temperature, systemPrompt, messages}）
   aiChat: (config) => ipcRenderer.invoke('ai:chat', config),
+  // 天气等公开 API 的 GET 代理，返回 {ok, status, body}
+  httpGet: (url) => ipcRenderer.invoke('net:get', url),
   // 菜单触发的目录已更换通知
   onDirChanged: (cb) => ipcRenderer.on('dir:changed', (e, dir) => cb && cb(dir))
 });

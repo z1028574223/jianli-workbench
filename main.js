@@ -5,10 +5,14 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
+
+function ensureDir(dir) {
+  try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); }
+  catch (e) { console.error('ensureDir 失败', dir, e); }
+}
 
 // ---------- 数据目录管理 ----------
 const SETTINGS_FILE = () => path.join(app.getPath('userData'), 'settings.json');
@@ -70,7 +74,11 @@ ipcMain.on('data:save', (event, key, value) => {
   try {
     ensureDataDir(getDataDir());
     const f = keyToFile(key);
-    fs.writeFileSync(f, value, 'utf8');
+    // 原子写（临时文件 + 改名），并把上一版留作 .bak，避免写入中断损坏台账数据
+    const tmp = f + '.tmp';
+    fs.writeFileSync(tmp, value, 'utf8');
+    try { if (fs.existsSync(f)) fs.copyFileSync(f, f + '.bak'); } catch (e) { console.error('备份失败', key, e); }
+    fs.renameSync(tmp, f);
     event.returnValue = true;
   } catch (e) {
     console.error('data:save 失败', key, e);
@@ -165,58 +173,51 @@ ipcMain.handle('ai:chat', async (event, { baseURL, model, apiKey, temperature, s
   });
 });
 
-// ---------- DOCX 生成（直接调用本地 Python，不再依赖手动下载 input.json） ----------
-const PYTHON_EXE = 'C:\\Users\\ZGX\\.workbuddy\\binaries\\python\\envs\\default\\Scripts\\python.exe';
-const DOCX_SKILL_DIR = 'C:\\Users\\ZGX\\.workbuddy\\skills\\jianli-tongzhidan-docx__skillhub';
-
-function ensureDir(dir) {
-  try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); }
-  catch (e) { console.error('ensureDir 失败', dir, e); }
-}
-
-ipcMain.handle('docx:generate', async (event, { type, payload, outDir, baseName }) => {
+// ---------- DOCX 落盘 ----------
+// 文档内容由渲染进程的 docxgen.js（纯 JS）生成，主进程只负责原子写入并打开文件。
+// 临时文件写完后再改名，避免中断留下损坏的 docx。
+ipcMain.handle('docx:save', async (event, { outDir, baseName, data }) => {
   try {
-    if (!type || !payload || !outDir || !baseName) {
+    if (!outDir || !baseName || !data) {
       return { success: false, error: '缺少必要参数' };
     }
     ensureDir(outDir);
     const safeBase = String(baseName).replace(/[\\/:*?"<>|]/g, '_');
-    const inputPath = path.join(outDir, safeBase + '.input.json');
     const outPath = path.join(outDir, safeBase + '.docx');
-    const scriptName = type === 'monthly' ? 'gen_monthly_report.py'
-      : type === 'form' ? 'gen_supervise_form.py'
-      : 'generate_jianli_docx.py';
-    const scriptPath = path.join(DOCX_SKILL_DIR, 'scripts', scriptName);
-
-    if (!fs.existsSync(PYTHON_EXE)) {
-      return { success: false, error: '未找到 Python 解释器：' + PYTHON_EXE };
-    }
-    if (!fs.existsSync(scriptPath)) {
-      return { success: false, error: '未找到生成脚本：' + scriptPath };
-    }
-
-    // 写入 input.json
-    fs.writeFileSync(inputPath, JSON.stringify(payload, null, 2), 'utf8');
-
-    // 调用 Python 脚本
-    await new Promise((resolve, reject) => {
-      const proc = spawn(PYTHON_EXE, [scriptPath, inputPath, outPath], { encoding: 'utf8' });
-      let stderr = '';
-      proc.stderr.on('data', (data) => { stderr += String(data); });
-      proc.on('close', (code) => {
-        if (code === 0 && fs.existsSync(outPath)) resolve();
-        else reject(new Error(stderr || ('生成失败，退出码 ' + code)));
-      });
-      proc.on('error', (err) => reject(err));
-    });
-
-    // 成功后打开文件
+    const tmpPath = outPath + '.tmp';
+    fs.writeFileSync(tmpPath, Buffer.from(data));
+    fs.renameSync(tmpPath, outPath);
     try { shell.openPath(outPath); } catch (e) { console.error('打开 docx 失败', e); }
     return { success: true, path: outPath };
   } catch (e) {
-    console.error('docx:generate 失败', e);
+    console.error('docx:save 失败', e);
     return { success: false, error: e.message };
   }
+});
+
+// ---------- 网络 GET 代理（天气等公开 API；渲染进程经此转发，避免 file:// 跨域问题） ----------
+ipcMain.handle('net:get', async (event, url) => {
+  return new Promise((resolve) => {
+    try {
+      const u = new URL(String(url));
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') {
+        return resolve({ ok: false, error: '协议不允许' });
+      }
+      const mod = u.protocol === 'https:' ? https : http;
+      const req = mod.request(u, {
+        method: 'GET',
+        timeout: 15000,
+        headers: { 'User-Agent': 'Mozilla/5.0 jianli-workbench', 'Accept': 'application/json,text/*;q=0.9' }
+      }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, body: data }));
+      });
+      req.on('error', (err) => resolve({ ok: false, error: err.message }));
+      req.on('timeout', () => { req.destroy(); resolve({ ok: false, error: '请求超时' }); });
+      req.end();
+    } catch (e) { resolve({ ok: false, error: e.message }); }
+  });
 });
 
 // ---------- 窗口 ----------
@@ -237,6 +238,15 @@ function createWindow() {
   });
 
   win.loadFile(path.join(__dirname, 'app.html'));
+
+  // 外部链接（http/https）交给系统默认浏览器；about:blank 等内部窗口（如联系单打印）正常放行
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:/i.test(url)) {
+      try { shell.openExternal(url); } catch (e) { console.error(e); }
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
+  });
 
   // 菜单：文件（数据目录）、查看、帮助
   const menu = Menu.buildFromTemplate([
@@ -289,7 +299,7 @@ function createWindow() {
               type: 'info',
               title: '使用说明',
               message: '工地监理总控工作台 - 本地版',
-              detail: '1. 所有数据以 JSON 文件形式保存在「数据目录」中，可随时备份/迁移。\n2. 通过「文件 → 选择数据保存目录…」可更换数据存放位置（更换后数据保存在新目录）。\n3. 如需迁移已有数据，请将旧数据目录中的 *.json 文件复制到新目录。\n4. 数据仅存本机，不上传任何服务器。'
+              detail: '版本：v1.1.0\n\n1. 所有数据以 JSON 文件形式保存在「数据目录」中，可随时备份/迁移。\n2. 通过「文件 → 选择数据保存目录…」可更换数据存放位置（更换后数据保存在新目录）。\n3. 如需迁移已有数据，请将旧数据目录中的 *.json 文件复制到新目录。\n4. 每次启动会自动把数据快照备份到数据目录的 backup\\ 下（保留最近 7 天）。\n5. 数据仅存本机，不上传任何服务器。'
             });
           }
         }
@@ -303,8 +313,35 @@ function createWindow() {
   });
 }
 
+// ---------- 每日启动备份：data/*.json 快照到 data/backup/日期/，保留最近 7 份 ----------
+function dailyBackup(){
+  try {
+    const dir = getDataDir();
+    if (!fs.existsSync(dir)) return;
+    const bdir = path.join(dir, 'backup');
+    fs.mkdirSync(bdir, { recursive: true });
+    const d = new Date();
+    const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const dest = path.join(bdir, ymd);
+    if (fs.existsSync(dest)) return; // 当天已备份
+    fs.mkdirSync(dest, { recursive: true });
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+    files.forEach(f => {
+      try { fs.copyFileSync(path.join(dir, f), path.join(dest, f)); } catch (e) { console.error('备份单文件失败', f, e); }
+    });
+    // 只保留最近 7 个日期目录
+    const dirs = fs.readdirSync(bdir).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)).sort();
+    while (dirs.length > 7) {
+      const oldDir = dirs.shift();
+      try { fs.rmSync(path.join(bdir, oldDir), { recursive: true, force: true }); } catch (e) { console.error('清理旧备份失败', oldDir, e); }
+    }
+    console.log('每日备份完成:', ymd, files.length, '个文件');
+  } catch (e) { console.error('每日备份失败', e); }
+}
+
 app.whenReady().then(() => {
   ensureDataDir(getDataDir());
+  dailyBackup();
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

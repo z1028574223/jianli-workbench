@@ -1,6 +1,6 @@
 {
   "name": "jianli-workbench",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "监理总控工作台（本地版）—— 纯前端监理业务管理，数据存本地目录",
   "main": "main.js",
   "author": "ZGX",

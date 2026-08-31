@@ -1935,9 +1935,12 @@ function sampleHTML(){
       <div class="hint" style="margin-top:8px">⚠️ 以上为常用参考口径，实际检验批量、样品数量、检测项目须以现行规范、地方要求、检测机构委托要求和项目试验方案为准。</div>
     </div>`;
   } else {
-    const kwS=(window.__kw_sample||'').toLowerCase();
-    const smList = sm.filter(x=>!kwS || ((x.cat||'')+' '+(x.name||'')+' '+(x.position||'')+' '+(x.status||'')+' '+(x.reportNo||'')).toLowerCase().includes(kwS));
     h+=kwBar('sample','过滤：分类 / 名称 / 部位 / 状态 / 报告号');
+    h+=`<div class="btn-row" style="margin-top:10px">
+      <button class="btn ghost" onclick="exportSmLedger()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>导出台账</button>
+      <button class="btn ghost" onclick="printSmLedger()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>打印台账</button>
+    </div>`;
+    const smList = smLedgerRows();
     if(sm.length===0) h+=`<div class="empty-hint">暂无取样记录，可在「知识库」标签中登记。</div>`;
     else if(smList.length===0) h+=`<div class="empty-hint">无匹配的取样记录</div>`;
     else {
@@ -2244,6 +2247,51 @@ function printMtLedger(){
   if(!w){ toast('请允许弹出窗口'); return; }
   w.document.write(html); w.document.close();
 }
+/* ---- 见证取样台账：过滤行 / 导出 / 打印 ---- */
+function smLedgerRows(){
+  const sm = load(K.sample,[]);
+  const kwS = (window.__kw_sample||'').toLowerCase();
+  return sm.filter(x=>!kwS || ((x.cat||'')+' '+(x.name||'')+' '+(x.position||'')+' '+(x.status||'')+' '+(x.reportNo||'')).toLowerCase().includes(kwS));
+}
+function exportSmLedger(){
+  const rows = smLedgerRows();
+  const lines = ['见证取样与送检台账','','序号\t分类\t材料/试件\t取样部位\t规格\t代表批量\t取样数\t取样时间\t送样时间\t状态\t报告编号'];
+  rows.forEach((x,i)=>{ lines.push([i+1, x.cat||'', x.name||'', x.position||'', x.spec||'', x.batch||'', x.qty||'', x.sampleDate||'', x.sendDate||'', x.status||'', x.reportNo||''].join('\t')); });
+  download(lines.join('\n'), `见证取样台账_${todayDisplay()}.txt`);
+  toast('已导出 '+rows.length+' 条台账');
+}
+function buildSmLedgerHTML(rows){
+  const trs = rows.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.cat||'-')}</td><td>${esc(x.name||'-')}${x.position?`<br><span style="color:#555;font-size:12px">${esc(x.position)}</span>`:''}</td><td>${esc(x.spec||'-')}</td><td>${esc(x.batch||'-')}</td><td>${esc(x.qty||'-')}</td><td>${esc(x.sampleDate||'-')}</td><td>${esc(x.sendDate||'-')}</td><td>${esc(x.status||'-')}</td><td>${esc(x.reportNo||'-')}</td></tr>`).join('');
+  return `<div class="ledger"><div class="ld-title">见证取样与送检台账</div>
+    <div class="ld-meta"><span>共 ${rows.length} 条 · 截至 ${todayDisplay()}</span><span class="ld-page">第 1 页</span></div>
+    <table class="ld-table"><thead><tr><th style="width:44px">序号</th><th>分类</th><th>材料/试件</th><th>规格</th><th>代表批量</th><th>取样数</th><th>取样时间</th><th>送样时间</th><th>状态</th><th>报告编号</th></tr></thead><tbody>${trs || '<tr><td colspan="10">暂无记录</td></tr>'}</tbody></table>
+    <div class="ld-foot">监理单位（盖章）：____________　　日期：____________</div></div>`;
+}
+function printSmLedger(){
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>见证取样与送检台账</title>
+  <style>
+    body{font-family:"Microsoft YaHei",sans-serif;margin:0;padding:24px;color:#000;background:#fff}
+    .ledger{max-width:1080px;margin:0 auto}
+    .ld-title{text-align:center;font-size:22px;font-weight:800;margin:0 0 16px;letter-spacing:2px}
+    .ld-meta{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;font-size:14px}
+    .ld-page{text-align:right}
+    .ld-table{width:100%;border-collapse:collapse;font-size:13px}
+    .ld-table th,.ld-table td{border:1px solid #000;padding:8px 6px;text-align:center;vertical-align:middle}
+    .ld-table thead th{font-weight:600;background:#f4f4f4}
+    .ld-foot{margin-top:12px;font-size:12px;color:#333;text-align:right}
+    @media print{
+      @page{size:A4 landscape;margin:12mm}
+      .ld-table th,.ld-table td{padding:6px 4px}
+    }
+  </style></head><body>${buildSmLedgerHTML(smLedgerRows())}
+  <script>setTimeout(function(){window.print();},200);<\/script>
+  </body></html>`;
+  const w = window.open('','_blank');
+  if(!w){ toast('请允许弹出窗口'); return; }
+  w.document.write(html); w.document.close();
+}
+window.exportSmLedger=exportSmLedger; window.printSmLedger=printSmLedger;
+
 function mtCategories(){
   return ['钢筋/钢材','水泥/粉煤灰','砂石/骨料','砌块/砖','混凝土/外加剂','防水材料','保温/装饰','门窗/幕墙','电气/水电','其他'];
 }

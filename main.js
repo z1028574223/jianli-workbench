@@ -9,6 +9,8 @@ const http = require('http');
 const https = require('https');
 const { URL } = require('url');
 
+let settingsCache = null;
+
 function ensureDir(dir) {
   try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); }
   catch (e) { console.error('ensureDir 失败', dir, e); }
@@ -26,16 +28,28 @@ function defaultDataDir() {
 }
 
 function loadSettings() {
+  if (settingsCache) return settingsCache;
   try {
     if (fs.existsSync(SETTINGS_FILE())) {
-      return JSON.parse(fs.readFileSync(SETTINGS_FILE(), 'utf8'));
+      const parsed = JSON.parse(fs.readFileSync(SETTINGS_FILE(), 'utf8'));
+      settingsCache = parsed && typeof parsed === 'object' ? parsed : {};
+      return settingsCache;
     }
   } catch (e) { /* 忽略损坏的配置 */ }
-  return {};
+  settingsCache = {};
+  return settingsCache;
 }
 
 function saveSettings(s) {
-  try { fs.writeFileSync(SETTINGS_FILE(), JSON.stringify(s, null, 2), 'utf8'); }
+  try {
+    const file = SETTINGS_FILE();
+    const tmp = file + '.tmp';
+    const value = s && typeof s === 'object' ? s : {};
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(tmp, JSON.stringify(value, null, 2), 'utf8');
+    fs.renameSync(tmp, file);
+    settingsCache = value;
+  }
   catch (e) { console.error('保存配置失败', e); }
 }
 

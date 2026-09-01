@@ -748,6 +748,86 @@
 .kw-clear{flex:none;display:none;border:none;background:var(--panel-2);color:var(--sub);width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:13px;line-height:1;transition:background .15s,color .15s}
 .kw-clear:hover{background:var(--red);color:#fff}
 .kw-bar.has-text .kw-clear{display:block}
+
+  /* UI refinement: professional supervision workspace */
+  :root{
+    --canvas:#f6f8fc;
+    --surface:#ffffff;
+    --panel-1:#ffffff;
+    --panel-2:#f8faff;
+    --border:rgba(15,35,60,.10);
+    --border-soft:rgba(83,58,253,.22);
+    --ink-1:#14253d;
+    --ink-2:#40536c;
+    --ink-3:#718096;
+    --accent:#4f46e5;
+    --accent-2:#6366f1;
+    --accent-d:#3730a3;
+    --accent-soft:#eef2ff;
+    --shadow-card:0 8px 24px rgba(29,45,78,.055);
+    --shadow-lg:0 14px 34px rgba(55,48,163,.13);
+    --r:14px;
+    --r-sm:10px;
+  }
+  html{scroll-behavior:smooth;}
+  body{background:var(--canvas);color:var(--ink-1);}
+  .topbar{min-height:64px;padding:10px 24px;background:rgba(255,255,255,.88);border-bottom-color:rgba(15,35,60,.08);box-shadow:0 1px 12px rgba(29,45,78,.05);}
+  .brand{font-size:16px;letter-spacing:-.2px;}
+  .brand svg{width:26px;height:26px;}
+  .sync,.fsdir{background:#f8faff;border-color:rgba(79,70,229,.13);}
+  .container{max-width:1440px;}
+  .nav{width:232px;padding:14px 12px;margin:16px;border-radius:16px;border-color:rgba(15,35,60,.08);box-shadow:0 8px 24px rgba(29,45,78,.06);}
+  .nav-group{padding:16px 12px 7px;font-size:10px;letter-spacing:1px;color:#8a96a8;}
+  .nav-item{min-height:42px;margin-bottom:3px;padding:9px 12px;border-radius:9px;font-size:13.5px;}
+  .nav-item.active{box-shadow:0 6px 14px rgba(79,70,229,.20);}
+  .main{padding:24px 30px 52px;}
+  .section-title{margin:22px 0 14px;font-size:17px;letter-spacing:-.15px;}
+  .card,.today,.ov-pending,.ov-top-stats .stat-card,.ov-ring-row .ring-card,.cp-grid .cp-card,.cp-today .todo,.cp-units .cu{border-radius:14px;box-shadow:var(--shadow-card);}
+  .card:hover,.cp-grid .cp-card:hover,.cp-today .todo:hover,.cp-units .cu:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+  .card{padding:20px;}
+  .today{padding:18px 20px;margin-bottom:20px;background:linear-gradient(135deg,#fff,#f1f4ff);}
+  button,.btn{border-radius:9px;transition:transform .15s ease,box-shadow .15s ease,background .15s ease;}
+  button:hover,.btn:hover{box-shadow:0 5px 12px rgba(55,48,163,.14);}
+  button:active,.btn:active{transform:translateY(1px);}
+  input,select,textarea{border-color:rgba(15,35,60,.14);border-radius:9px;background:#fff;transition:border-color .15s ease,box-shadow .15s ease;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.11);outline:none;}
+  table{border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--border);border-radius:12px;}
+  th{background:#f5f7fb;color:#526176;font-weight:700;}
+  tr:hover td{background:#fafbff;}
+  .ov-top-stats{gap:14px;}
+  .ov-top-stats .stat-card{padding:16px 18px;}
+  .ov-top-stats .stat-value{font-size:28px;}
+  .ov-ring-row{gap:14px;}
+  .ov-ring-row .ring-card{padding:20px 22px;gap:20px;}
+  .modal,.dialog{border-radius:16px;box-shadow:0 24px 70px rgba(17,24,39,.22);}
+  @media(max-width:980px){
+    .topbar{padding:10px 16px;}
+    .fsdir{max-width:230px;}
+    .main{padding:20px 20px 44px;}
+  }
+  @media(max-width:640px){
+    .topbar{gap:8px;}
+    .sync{display:none;}
+    .fsdir{margin-left:auto;max-width:150px;}
+    .fsdir-text{max-width:90px;}
+    .main{padding:16px 14px 92px;}
+    .card{padding:16px;}
+    .today{padding:15px;}
+    .today-item{align-items:flex-start;flex-wrap:wrap;}
+    .today-item .ti-acts{width:100%;justify-content:flex-end;}
+    .ov-ring-row .ring-card{padding:16px;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;}
+  }
+
+  /* Layout consistency: keep overview and inner pages aligned */
+  .container,body[data-page="overview"] .container{max-width:1440px;}
+  body[data-page="overview"] .main{padding:24px 30px 52px;height:calc(100vh - 64px);}
+  body[data-page="overview"] .nav{width:232px;margin:16px;padding:14px 12px;}
+  .nav-item{font-size:14px;}
+  .nav-group{font-size:11px;}
 </style>
 <!-- mammoth.js 用于浏览器端解析 docx 文本（离线可用） -->
 <script>
@@ -2231,6 +2311,8 @@ function printMtLedger(){
     .ledger{max-width:1080px;margin:0 auto}
     .ld-title{text-align:center;font-size:22px;font-weight:800;margin:0 0 16px;letter-spacing:2px}
     .ld-meta{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;font-size:14px}
+    .ld-project{display:flex;justify-content:space-between;gap:24px;margin-bottom:10px;font-size:14px}
+    .ld-project span{flex:1}
     .ld-page{text-align:right}
     .ld-table{width:100%;border-collapse:collapse;font-size:13px}
     .ld-table th,.ld-table td{border:1px solid #000;padding:8px 6px;text-align:center;vertical-align:middle}
@@ -2253,16 +2335,27 @@ function smLedgerRows(){
   const kwS = (window.__kw_sample||'').toLowerCase();
   return sm.filter(x=>!kwS || ((x.cat||'')+' '+(x.name||'')+' '+(x.position||'')+' '+(x.status||'')+' '+(x.reportNo||'')).toLowerCase().includes(kwS));
 }
+function smLedgerMeta(rows){
+  const sourceRows = rows.length ? rows : load(K.sample,[]);
+  const projectNames = [...new Set(sourceRows.map(x=>projName(x.proj)).filter(x=>x && x!=='(未关联)'))];
+  return {
+    projectName: projectNames.length===1 ? projectNames[0] : (projectNames.length>1 ? '多个项目' : '未设置'),
+    constructionName: unitName('施工单位') || '未设置'
+  };
+}
 function exportSmLedger(){
   const rows = smLedgerRows();
-  const lines = ['见证取样与送检台账','','序号\t分类\t材料/试件\t取样部位\t规格\t代表批量\t取样数\t取样时间\t送样时间\t状态\t报告编号'];
+  const meta = smLedgerMeta(rows);
+  const lines = ['见证取样与送检台账','工程名称：'+meta.projectName,'施工单位：'+meta.constructionName,'','序号\t分类\t材料/试件\t取样部位\t规格\t代表批量\t取样数\t取样时间\t送样时间\t状态\t报告编号'];
   rows.forEach((x,i)=>{ lines.push([i+1, x.cat||'', x.name||'', x.position||'', x.spec||'', x.batch||'', x.qty||'', x.sampleDate||'', x.sendDate||'', x.status||'', x.reportNo||''].join('\t')); });
-  download(lines.join('\n'), `见证取样台账_${todayDisplay()}.txt`);
+  download(lines.join('\n'), '见证取样台账_'+todayDisplay()+'.txt');
   toast('已导出 '+rows.length+' 条台账');
 }
 function buildSmLedgerHTML(rows){
+  const meta = smLedgerMeta(rows);
   const trs = rows.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.cat||'-')}</td><td>${esc(x.name||'-')}${x.position?`<br><span style="color:#555;font-size:12px">${esc(x.position)}</span>`:''}</td><td>${esc(x.spec||'-')}</td><td>${esc(x.batch||'-')}</td><td>${esc(x.qty||'-')}</td><td>${esc(x.sampleDate||'-')}</td><td>${esc(x.sendDate||'-')}</td><td>${esc(x.status||'-')}</td><td>${esc(x.reportNo||'-')}</td></tr>`).join('');
   return `<div class="ledger"><div class="ld-title">见证取样与送检台账</div>
+    <div class="ld-project"><span>工程名称：${esc(meta.projectName)}</span><span>施工单位：${esc(meta.constructionName)}</span></div>
     <div class="ld-meta"><span>共 ${rows.length} 条 · 截至 ${todayDisplay()}</span><span class="ld-page">第 1 页</span></div>
     <table class="ld-table"><thead><tr><th style="width:44px">序号</th><th>分类</th><th>材料/试件</th><th>规格</th><th>代表批量</th><th>取样数</th><th>取样时间</th><th>送样时间</th><th>状态</th><th>报告编号</th></tr></thead><tbody>${trs || '<tr><td colspan="10">暂无记录</td></tr>'}</tbody></table>
     <div class="ld-foot">监理单位（盖章）：____________　　日期：____________</div></div>`;
@@ -2274,7 +2367,9 @@ function printSmLedger(){
     .ledger{max-width:1080px;margin:0 auto}
     .ld-title{text-align:center;font-size:22px;font-weight:800;margin:0 0 16px;letter-spacing:2px}
     .ld-meta{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;font-size:14px}
-    .ld-page{text-align:right}
+         .ld-project{display:flex;justify-content:space-between;gap:24px;margin-bottom:10px;font-size:14px}
+     .ld-project span{flex:1}
+.ld-page{text-align:right}
     .ld-table{width:100%;border-collapse:collapse;font-size:13px}
     .ld-table th,.ld-table td{border:1px solid #000;padding:8px 6px;text-align:center;vertical-align:middle}
     .ld-table thead th{font-weight:600;background:#f4f4f4}

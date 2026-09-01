@@ -54,7 +54,7 @@
 
 ## 安装与运行（使用者）
 
-1. 前往本仓库 **Releases** 下载 `jianli-workbench-v1.2.0-setup.exe`。
+1. 前往本仓库 **Releases** 下载 `jianli-workbench-v1.2.1-setup.exe`。
 2. 双击安装（桌面 / 开始菜单自动创建快捷方式）。
 3. 数据默认保存在安装目录的 `data/`，每次启动自动快照到 `data/backup/日期/`（保留 7 天）。
 4. 菜单「文件 → 选择数据保存目录…」可更换数据位置；整目录拷贝即可迁移。
@@ -65,7 +65,7 @@
 
 ```bash
 npm install
-npm run dist          # 产出 dist/监理总控工作台-v1.2.0-setup.exe
+npm run dist          # 产出 dist/监理总控工作台-v1.2.1-setup.exe
 npm start             # 本地调试运行
 node test_docxgen.js  # DOCX 生成回归测试
 ```

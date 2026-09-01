@@ -1,5 +1,5 @@
 /* 桥接层：暴露同步文件读写 API 给页面（window.fsBridge）
- * 版本: v1.2.0 */
+ * 版本: v1.2.1 */
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('fsBridge', {

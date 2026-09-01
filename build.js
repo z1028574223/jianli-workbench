@@ -1,5 +1,5 @@
 // 构建编排：electron-builder 打包 nsis 安装包 -> 兜底确保规范命名
-// 期望产物：监理总控工作台-v1.2.0-setup.exe
+// 期望产物：监理总控工作台-v1.2.1-setup.exe
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');

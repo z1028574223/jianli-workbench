@@ -210,7 +210,7 @@ ipcMain.handle('docx:save', async (event, { outDir, baseName, data }) => {
 });
 
 // ---------- 网络 GET 代理（天气等公开 API；渲染进程经此转发，避免 file:// 跨域问题） ----------
-ipcMain.handle('net:get', async (event, url) => {
+ipcMain.handle('net:get', async (event, url, headers) => {
   return new Promise((resolve) => {
     try {
       const u = new URL(String(url));
@@ -221,7 +221,7 @@ ipcMain.handle('net:get', async (event, url) => {
       const req = mod.request(u, {
         method: 'GET',
         timeout: 15000,
-        headers: { 'User-Agent': 'Mozilla/5.0 jianli-workbench', 'Accept': 'application/json,text/*;q=0.9' }
+        headers: Object.assign({ 'User-Agent': 'Mozilla/5.0 jianli-workbench', 'Accept': 'application/json,text/*;q=0.9' }, (headers && typeof headers === 'object') ? headers : {})
       }, (res) => {
         let data = '';
         res.on('data', c => { data += c; });
@@ -229,6 +229,39 @@ ipcMain.handle('net:get', async (event, url) => {
       });
       req.on('error', (err) => resolve({ ok: false, error: err.message }));
       req.on('timeout', () => { req.destroy(); resolve({ ok: false, error: '请求超时' }); });
+      req.end();
+    } catch (e) { resolve({ ok: false, error: e.message }); }
+  });
+});
+
+// ---------- 网络 POST 代理（服务器 API 同步用；渲染进程经此转发，避免 file:// 跨域问题） ----------
+ipcMain.handle('net:post', async (event, url, body, headers) => {
+  return new Promise((resolve) => {
+    try {
+      const u = new URL(String(url));
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') {
+        return resolve({ ok: false, error: '协议不允许' });
+      }
+      const mod = u.protocol === 'https:' ? https : http;
+      const data = (typeof body === 'string') ? body : JSON.stringify(body || {});
+      const h = Object.assign({
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data),
+        'User-Agent': 'Mozilla/5.0 jianli-workbench',
+        'Accept': 'application/json,text/*;q=0.9'
+      }, (headers && typeof headers === 'object') ? headers : {});
+      const req = mod.request(u, {
+        method: 'POST',
+        timeout: 30000,
+        headers: h
+      }, (res) => {
+        let rdata = '';
+        res.on('data', c => { rdata += c; });
+        res.on('end', () => resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, body: rdata }));
+      });
+      req.on('error', (err) => resolve({ ok: false, error: err.message }));
+      req.on('timeout', () => { req.destroy(); resolve({ ok: false, error: '请求超时' }); });
+      req.write(data);
       req.end();
     } catch (e) { resolve({ ok: false, error: e.message }); }
   });

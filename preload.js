@@ -19,8 +19,10 @@ contextBridge.exposeInMainWorld('fsBridge', {
   saveDocx: (outDir, baseName, data) => ipcRenderer.invoke('docx:save', { outDir, baseName, data }),
   // AI 对话代理（config: {baseURL, model, apiKey, temperature, systemPrompt, messages}）
   aiChat: (config) => ipcRenderer.invoke('ai:chat', config),
-  // 天气等公开 API 的 GET 代理，返回 {ok, status, body}
-  httpGet: (url) => ipcRenderer.invoke('net:get', url),
+  // 天气等公开 API 的 GET 代理，返回 {ok, status, body}；headers 可选（云同步鉴权用）
+  httpGet: (url, headers) => ipcRenderer.invoke('net:get', url, headers),
+  // 服务器 API POST 代理（body 对象自动 JSON 化，headers 可选），返回 {ok, status, body}
+  httpPost: (url, body, headers) => ipcRenderer.invoke('net:post', url, body, headers),
   // 菜单触发的目录已更换通知
   onDirChanged: (cb) => ipcRenderer.on('dir:changed', (e, dir) => cb && cb(dir))
 });

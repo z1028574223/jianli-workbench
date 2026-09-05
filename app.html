@@ -876,6 +876,10 @@ window.mammothReady = new Promise(function(resolve){
     <span>北星小学东校区二期扩建工程 · 监理工作台</span>
   </div>
   <div class="sync"><span class="dot"></span><span id="syncText">本地存储 · 已保存</span></div>
+  <div class="sync" id="cloudSyncBox" style="display:none;cursor:pointer" title="点击打开云同步设置">
+    <span id="cloudSyncDot" class="dot" style="background:var(--sub)"></span>
+    <span id="cloudSyncText">云同步 · 未连接</span>
+  </div>
   <div id="fsDirBox" class="fsdir" style="display:none">
     <span class="fsdir-ico">📁</span>
     <span id="fsDirText" class="fsdir-text" title="点击打开数据目录">数据目录</span>
@@ -994,7 +998,8 @@ const K = { proj:PREFIX+"projects", insp:PREFIX+"inspects", side:PREFIX+"sides",
   contractTotal:PREFIX+"contract_total", todoState:PREFIX+"todo_state", todoGo:PREFIX+"todo_go", planTpl:PREFIX+"plan_templates",
   check:PREFIX+"checks", machine:PREFIX+"machines", special:PREFIX+"specials", scheme:PREFIX+"schemes",
   aiConfig:PREFIX+"ai_config", aiHistory:PREFIX+"ai_history",
-  wcfg:PREFIX+"weather_cfg", wcache:PREFIX+"weather_cache" };
+  wcfg:PREFIX+"weather_cfg", wcache:PREFIX+"weather_cache",
+  syncCfg:PREFIX+"sync_cfg", syncMeta:PREFIX+"sync_meta" };
 const todayDisplay = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 // 桌面环境（Electron）下走 fsBridge 文件持久化；网页版回退 localStorage
 const IS_DESKTOP = typeof window !== 'undefined' && !!window.fsBridge;
@@ -1027,6 +1032,246 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 let ROLE = load(K.role, "操作员");
 function flashSync(){ const t=document.getElementById('syncText'); if(!t) return; t.textContent="保存中…"; setTimeout(()=>{ t.textContent= IS_DESKTOP ? "已保存到数据目录" : "本地存储 · 已保存"; },400); }
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),1800); }
+
+/* ============ 云同步：接入华为服务器（Node.js + SQLite 后端） ============ */
+/* 电脑端本地 JSON → 服务器 records（project_id 分区，record_key 唯一）。 */
+const SYNC_DEFS = [
+  { key:'insp',     module:'xunshi',  rk:'id' },   // 巡视检查
+  { key:'check',    module:'inspect', rk:'id' },   // 检查验收
+  { key:'side',     module:'pangzhan', rk:'id' },  // 旁站记录
+  { key:'sample',   module:'sample',  rk:'id' },   // 见证取样
+  { key:'material', module:'material', rk:'id' },  // 材料进场
+  { key:'machine',  module:'machine', rk:'id' },   // 机械设备
+  { key:'special',  module:'special', rk:'id' },   // 特种作业
+  { key:'progress', module:'jindu',   rk:'id' },   // 进度对比
+  { key:'invest',   module:'touzi',   rk:'id' },   // 投资监理
+  { key:'plan',     module:'guihua',  rk:'id' },   // 监理规划
+  { key:'log',      module:'rizhi',   rk:'id', split:true }, // 监理日志/月报（按 type 拆分）
+  { key:'meeting',  module:'lihui',   rk:'id' },   // 例会纪要
+  { key:'notice',   module:'tongzhi', rk:'id' },   // 监理通知单
+  { key:'letter',   module:'laixin',  rk:'id' },   // 来往函件
+  { key:'scheme',   module:'fangan',  rk:'id' },   // 方案审查
+  { key:'units',    module:'units',   rk:'role' }  // 参建单位（record_key=角色）
+];
+const CLOUD_DEFAULT = { server:'http://1.95.72.129:3000', username:'admin', password:'', token:'', tokenExpires:0 };
+function getSyncCfg(){ const c=load(K.syncCfg, CLOUD_DEFAULT); return Object.assign({}, CLOUD_DEFAULT, c||{}); }
+function saveSyncCfg(c){ save(K.syncCfg, c); }
+function getSyncMeta(){ return load(K.syncMeta, { lastSync:0, projectMap:{} }); }
+function saveSyncMeta(m){ save(K.syncMeta, m); }
+/* 顶栏云同步状态 */
+function updateCloudUI(state, text){
+  const box=document.getElementById('cloudSyncBox');
+  if(!box) return;
+  const dot=document.getElementById('cloudSyncDot');
+  const t=document.getElementById('cloudSyncText');
+  box.style.display='flex';
+  if(state==='ok'){ dot.style.background='#16a34a'; t.textContent=text||'云同步 · 已连接'; }
+  else if(state==='busy'){ dot.style.background='#6366f1'; t.textContent=text||'云同步 · 同步中…'; }
+  else if(state==='err'){ dot.style.background='#dc2626'; t.textContent=text||'云同步 · 失败'; }
+  else { dot.style.background='var(--sub)'; t.textContent=text||'云同步 · 未连接'; }
+}
+/* 服务器 API 请求（GET/POST，带 Bearer token） */
+async function cloudApi(cfg, method, path, body){
+  const base=String(cfg.server||'').replace(/\/+$/,'');
+  const headers = cfg.token ? { 'Authorization':'Bearer '+cfg.token } : {};
+  let res;
+  if(method==='GET') res = await window.fsBridge.httpGet(base+path, headers);
+  else res = await window.fsBridge.httpPost(base+path, body||{}, headers);
+  if(!res || !res.ok){
+    let msg=(res&&res.error)||'网络错误';
+    if(res&&res.body){ try{ const j=JSON.parse(res.body); msg=j.error||msg; }catch(e){ msg=String(res.body).slice(0,150); } }
+    throw new Error((res&&res.status?('HTTP '+res.status+' '):'')+msg);
+  }
+  return JSON.parse(res.body);
+}
+/* 登录（token 有效则跳过） */
+async function cloudEnsureLogin(cfg){
+  if(cfg.token && cfg.tokenExpires && cfg.tokenExpires>Date.now()) return;
+  if(!cfg.username || !cfg.password) throw new Error('请先填写服务器用户名和密码');
+  const r=await cloudApi(cfg,'POST','/api/auth/login',{username:cfg.username,password:cfg.password});
+  if(!r||!r.ok||!r.token) throw new Error('登录失败：'+(r&&r.error||'未知错误'));
+  cfg.token=r.token; cfg.tokenExpires=r.expiresAt||0; saveSyncCfg(cfg);
+}
+/* 项目映射：本地项目名称 ↔ 服务器项目 id（同名匹配，缺则自动创建） */
+async function cloudSyncProjects(cfg){
+  const r=await cloudApi(cfg,'GET','/api/projects');
+  const serverProjs=(r&&r.projects)||[];
+  const localProjs=load(K.proj,[]);
+  const meta=getSyncMeta();
+  const map=Object.assign({}, meta.projectMap||{});
+  const byName={};
+  serverProjs.forEach(p=>{ byName[p.name]=p; });
+  const created=[];
+  for(const lp of localProjs){
+    if(!lp||!lp.name) continue;
+    let sid=map[String(lp.id)];
+    if(sid && serverProjs.some(x=>x.id===Number(sid))) continue;
+    if(byName[lp.name]){ map[String(lp.id)]=String(byName[lp.name].id); continue; }
+    const cr=await cloudApi(cfg,'POST','/api/projects',{name:lp.name});
+    if(cr&&cr.project){ map[String(lp.id)]=String(cr.project.id); byName[lp.name]=cr.project; created.push(lp.name); }
+  }
+  meta.projectMap=map; saveSyncMeta(meta);
+  const inv={}; Object.keys(map).forEach(k=>{ inv[map[k]]=k; });
+  return { serverProjs, localProjs, map, inv, created };
+}
+function cloudRecKey(def, rec, idx){
+  if(def.rk==='role') return String(rec.role||('role_'+idx));
+  return String(rec.id||rec._id||('rec_'+Date.now()+'_'+idx));
+}
+/* 上传：本地各模块 → 服务器（按项目分区 upsert；无 proj 字段的记录归入默认项目） */
+async function cloudUpload(cfg, map){
+  let total=0, sent=0;
+  const localProjs=load(K.proj,[]);
+  const defaultPid = (localProjs.length && map[String(localProjs[0].id)]) ? Number(map[String(localProjs[0].id)]) : 0;
+  for(const def of SYNC_DEFS){
+    const arr=load(K[def.key], []);
+    if(!Array.isArray(arr)||!arr.length) continue;
+    const per={};
+    arr.forEach((rec,i)=>{
+      if(!rec||typeof rec!=='object') return;
+      const pid = rec.proj ? cloudProjId(rec.proj, map) : defaultPid;
+      let mod=def.module;
+      if(def.split){ mod = (rec.type==='监理月报') ? 'yuebao' : 'rizhi'; }
+      const c={ module:mod, record_key:cloudRecKey(def,rec,i), data:rec, updated_at:(rec.updatedAt||rec.updated_at||Date.now()), deleted:0 };
+      (per[pid]=per[pid]||[]).push(c);
+    });
+    for(const pid in per){
+      const changes=per[pid];
+      const rr=await cloudApi(cfg,'POST','/api/sync/up',{ projectId:Number(pid), changes });
+      total+=(rr&&rr.applied)||0; sent+=changes.length;
+    }
+  }
+  return { total, sent };
+}
+function cloudProjId(localId, map){ return Number(map[String(localId)])||0; }
+/* 下载：服务器 → 本地合并（本地已有的保留，服务器独有记录并入） */
+async function cloudDownload(cfg, map, inv){
+  const meta=getSyncMeta();
+  let added=0, got=0;
+  const pids={}; Object.keys(map).forEach(k=>{ pids[String(map[k])]=1; });
+  for(const def of SYNC_DEFS){
+    const local=load(K[def.key], []);
+    const list=Array.isArray(local)?local:[];
+    const have=new Set();
+    list.forEach((x,i)=>{ if(x) have.add(cloudRecKey(def,x,i)); });
+    const mods=def.split?['rizhi','yuebao']:[def.module];
+    let dirty=false;
+    for(const pid of Object.keys(pids)){
+      for(const mod of mods){
+        const rr=await cloudApi(cfg,'POST','/api/sync/all',{ projectId:Number(pid), module:mod });
+        const changes=(rr&&rr.changes)||[];
+        for(const ch of changes){
+          if(ch.deleted) continue;
+          const data=ch.data&&typeof ch.data==='object'?ch.data:{};
+          const idx=list.length;
+          const rk=def.rk==='role'?String(data.role||''):String(data.id||'');
+          if(!rk){ continue; }
+          if(have.has(rk)) continue;
+          if(!data.proj && inv[String(pid)]) data.proj=String(inv[String(pid)]);
+          list.push(data); have.add(rk); added++; dirty=true;
+        }
+        got+=changes.length;
+      }
+    }
+    if(dirty) save(K[def.key], list);
+  }
+  meta.lastSync=Date.now(); saveSyncMeta(meta);
+  return { added, got };
+}
+/* 云同步主流程：mode = both 全量 / upload 仅上传 / download 仅下载 */
+async function cloudSync(mode){
+  if(!IS_DESKTOP){ toast('云同步仅桌面版可用'); return; }
+  if(!window.fsBridge.httpPost){ toast('请更新程序后再使用云同步'); return; }
+  const cfg=getSyncCfg();
+  updateCloudUI('busy','云同步 · 登录中…');
+  try{
+    await cloudEnsureLogin(cfg);
+    if(mode!=='download'){
+      updateCloudUI('busy','云同步 · 项目匹配…');
+      const prj=await cloudSyncProjects(cfg);
+      updateCloudUI('busy','云同步 · 上传中…');
+      const up=await cloudUpload(cfg, prj.map);
+      if(mode==='both'){
+        updateCloudUI('busy','云同步 · 下载中…');
+        const dn=await cloudDownload(cfg, prj.map, prj.inv);
+        updateCloudUI('ok','云同步 · 已完成');
+        toast('云同步完成：上传 '+up.sent+' 条 / 新增 '+dn.added+' 条');
+      } else {
+        updateCloudUI('ok','云同步 · 已完成');
+        toast('已上传 '+up.sent+' 条数据到服务器');
+      }
+    } else {
+      updateCloudUI('busy','云同步 · 项目匹配…');
+      const prj=await cloudSyncProjects(cfg);
+      updateCloudUI('busy','云同步 · 下载中…');
+      const dn=await cloudDownload(cfg, prj.map, prj.inv);
+      updateCloudUI('ok','云同步 · 已完成');
+      toast('已从服务器同步 '+dn.added+' 条数据');
+    }
+    if(window.cloudSyncDoneCb) window.cloudSyncDoneCb();
+  }catch(e){
+    console.error('云同步失败', e);
+    updateCloudUI('err','云同步 · 失败');
+    toast('云同步失败：'+e.message);
+  }
+}
+/* 云同步设置弹窗 */
+function openCloudSync(){
+  if(!IS_DESKTOP){ toast('云同步仅桌面版可用'); return; }
+  const cfg=getSyncCfg();
+  const meta=getSyncMeta();
+  const lastTxt=meta.lastSync?new Date(meta.lastSync).toLocaleString():'从未同步';
+  const html=`
+  <div style="padding:20px;min-width:360px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <b style="font-size:16px">云同步设置</b>
+      <button class="mbtn" onclick="closeModal()">✕</button>
+    </div>
+    <div style="display:grid;gap:10px">
+      <label style="font-size:12px;color:var(--sub)">服务器地址</label>
+      <input id="sc_server" value="${esc(cfg.server)}" placeholder="http://1.95.72.129:3000" style="padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px"/>
+      <label style="font-size:12px;color:var(--sub)">用户名</label>
+      <input id="sc_user" value="${esc(cfg.username)}" placeholder="admin" style="padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px"/>
+      <label style="font-size:12px;color:var(--sub)">密码</label>
+      <input id="sc_pass" type="password" value="${esc(cfg.password)}" placeholder="服务器管理员密码" style="padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px"/>
+      <div style="font-size:12px;color:var(--sub)">上次同步：${lastTxt}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="primary" onclick="cloudSyncModalAction('both')">登录并全量同步</button>
+        <button class="mbtn" onclick="cloudSyncModalAction('upload')">仅上传</button>
+        <button class="mbtn" onclick="cloudSyncModalAction('download')">仅下载</button>
+      </div>
+      <div id="cloudSyncResult" style="font-size:12px;color:var(--sub);min-height:18px;margin-top:4px"></div>
+    </div>
+  </div>`;
+  showModal(html);
+  updateCloudUI('idle');
+}
+function cloudSyncModalAction(mode){
+  const server=document.getElementById('sc_server').value.trim();
+  const username=document.getElementById('sc_user').value.trim();
+  const password=document.getElementById('sc_pass').value;
+  if(!server){ toast('请填写服务器地址'); return; }
+  const cfg=getSyncCfg();
+  cfg.server=server; cfg.username=username||'admin'; cfg.password=password;
+  if(password) cfg.token=''; // 改了密码需重新登录
+  saveSyncCfg(cfg);
+  const res=document.getElementById('cloudSyncResult');
+  if(res) res.textContent='同步中，请稍候…';
+  closeModal();
+  cloudSync(mode);
+}
+/* 顶栏云同步点击 */
+(function(){
+  const box=document.getElementById('cloudSyncBox');
+  if(!box) return;
+  box.addEventListener('click', function(){
+    if(!window.fsBridge||!window.fsBridge.httpPost){ toast('当前版本不支持云同步'); return; }
+    openCloudSync();
+  });
+  const cfg=getSyncCfg();
+  if(cfg && cfg.token && cfg.tokenExpires && cfg.tokenExpires>Date.now()) updateCloudUI('ok','云同步 · 已连接');
+  else updateCloudUI('idle'); // 无条件显示云同步入口
+})();
 
 /* 权限矩阵（演示用，非真安全）：addProj新增项目 dispatch派发 inspect录入 closeIssue整改闭环 exportDoc导出文档 finance投资/合同 */
 /* 单人操作模式：所有功能开放，不再区分总监/专监/监理员角色 */

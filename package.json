@@ -1,7 +1,7 @@
 {
   "name": "jianli-workbench",
-  "version": "1.2.1",
-  "description": "监理总控工作台（本地版）—— 纯前端监理业务管理，数据存本地目录",
+  "version": "1.3.0",
+  "description": "监理总控工作台 —— 本地业务管理 + 华为服务器云同步（Node.js + SQLite）",
   "main": "main.js",
   "author": "ZGX",
   "license": "MIT",

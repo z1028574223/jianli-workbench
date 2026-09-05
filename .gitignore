@@ -32,3 +32,6 @@ data/
 .DS_Store
 Thumbs.db
 *.tmp
+
+# iOS 独立仓库（单独管理，不纳入电脑端仓库）
+jianli_ios/

@@ -1598,7 +1598,7 @@ function projList(){ return load(K.proj,[]); }
 function statusBadge(s){ const m={"在监":'b-monitor',"竣工":'b-done',"暂停":'b-pause'}; return `<span class="badge ${m[s]||''}">${s}</span>`; }
 function inspBadge(s){ const m={"待整改":'red',"整改中":'amber',"已处理":'green'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
 function prioPill(p){ const m={"P0":'red',"P1":'amber',"P2":''}; return `<span class="pill ${m[p]||''}">${p}</span>`; }
-function stPill(s){ const m={"已取样":'blue',"已送检":'amber',"报告合格":'green',"报告不合格":'red fail',"验收合格":'green',"验收不合格":'red fail',"已签认":'green',"审查中":'amber',"已处理":'green',"监控中":'amber',"待整改":'red fail',"已支付":'green',"通过":'green',"整改后通过":'amber',"不通过":'red fail'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
+function stPill(s){ const m={"已取样":'blue',"已送检":'amber',"合格":'green',"不合格":'red fail',"验收合格":'green',"验收不合格":'red fail',"已签认":'green',"审查中":'amber',"已处理":'green',"监控中":'amber',"待整改":'red fail',"已支付":'green',"通过":'green',"整改后通过":'amber',"不通过":'red fail'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
 function projSelect(sel){ const pl=projList(); if(!pl.length) return `<select id="${sel}"><option value="">暂无项目，请先添加</option></select>`; return `<select id="${sel}"><option value="">请选择项目</option>${pl.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>`; }
 function projOptions(sel, cur){ return `<select id="${sel}">${projList().map(p=>`<option value="${p.id}" ${cur===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`; }
 function getContractTotal(){ return Number(load(K.contractTotal, 186000000)); }
@@ -1686,11 +1686,11 @@ function buildToday(){
   load(K.invest,[]).forEach(x=>{ if(x.status==="审查中") items.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,act:()=>gotoFocus('invest', x.id)}); });
   load(K.letter,[]).forEach(x=>{ if(x.status==="未回复"&&x.type!=="工作联系单") items.push({key:"letter:"+x.id, tag:"待回函",over:true,title:x.type+": "+x.subject,meta:`${projName(x.proj)} · ${x.no||''} · ${x.date} · 未回复`,act:()=>gotoFocus('letter', x.id)}); });
   load(K.meeting,[]).forEach(x=>{ const f=(x.fields||[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) items.push({key:"meeting:"+x.id, tag:"例会清单",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,act:()=>gotoFocus('meeting', x.id)}); });
-  // 见证取样提醒：混凝土已取样超26天待送样；报告不合格直接提醒
+  // 见证取样提醒：混凝土已取样超26天待送样；不合格直接提醒
   load(K.sample,[]).forEach(x=>{
-    // 报告不合格：直接提醒
-    if(x.status==="报告不合格"){
-      items.push({key:"sample:"+x.id, tag:"见证取样",over:true,title:`${x.name||'见证取样'} 报告不合格`,meta:`${projName(x.proj)} · ${x.cat||''} · 取样 ${x.sampleDate||'-'} · 报告不合格`,act:()=>gotoFocus('sample', x.id)});
+    // 不合格：直接提醒
+    if(x.status==="不合格"){
+      items.push({key:"sample:"+x.id, tag:"见证取样",over:true,title:`${x.name||'见证取样'} 不合格`,meta:`${projName(x.proj)} · ${x.cat||''} · 取样 ${x.sampleDate||'-'} · 不合格`,act:()=>gotoFocus('sample', x.id)});
       return;
     }
     // 混凝土已取样：取样日期+26天提醒送样
@@ -1851,7 +1851,7 @@ function quickStatsHTML(){
   const cards=[
     ["未处理问题", load(K.insp,[]).filter(x=>x.status!=="已处理").length, 'var(--amber)'],
     ["旁站记录", load(K.side,[]).length, 'var(--purple)'],
-    ["见证取样", load(K.sample,[]).filter(x=>x.status!=="报告合格").length, 'var(--blue)'],
+    ["见证取样", load(K.sample,[]).filter(x=>x.status!=="合格").length, 'var(--blue)'],
     ["投资签认", "¥"+(load(K.invest,[]).filter(x=>x.type!=="预付款"&&(x.status==="已签认"||x.status==="已支付")).reduce((s,x)=>s+Number(x.amount||0),0)/10000).toFixed(1)+"万", 'var(--green)'],
     ["监理通知单", load(K.notice,[]).length, 'var(--red)'],
     ["规划细则", load(K.plan,[]).filter(x=>x.status!=="已批准").length, 'var(--purple)'],
@@ -1879,7 +1879,7 @@ function overviewHTML(){
 
   const inspOpen = insp.filter(x=>x.status!=="已处理").length;
   const inspDanger = insp.filter(x=>x.level==="严重"||x.level==="重大").length;
-  const sampleWait = sample.filter(x=>x.status!=="报告合格").length;
+  const sampleWait = sample.filter(x=>x.status!=="合格").length;
   const noticeOpen = notice.filter(x=>!x.docx).length;
   const letterWait = letter.filter(x=>x.status==="未回复"&&x.type!=="工作联系单").length;
   const meetingTodo = meeting.length;
@@ -2376,7 +2376,7 @@ function sampleHTML(){
       window.__smPage = curPage;
       const pageRows = smList.slice((curPage-1)*pageSize, curPage*pageSize);
       h+=`<div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>分类</th><th>材料/试件</th><th>项目</th><th>规格</th><th>代表批量</th><th>取样数</th><th>取样时间</th><th>送样时间</th><th>状态</th><th>报告</th><th>操作</th></tr></thead><tbody>`;
-      pageRows.forEach(x=>{ h+=`<tr><td>${esc(x.cat||'-')}</td><td>${esc(x.name)}<br><span style="color:var(--sub);font-size:12px">${esc(x.position||'')}${x.position&&x.note?' · ':''}${esc(x.note||'')}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.spec||'')}</td><td>${esc(x.batch||'')}</td><td>${esc(x.qty||'')}</td><td>${esc(x.sampleDate||'-')}</td><td>${esc(x.sendDate||'-')}</td><td>${stPill(x.status)}</td><td>${esc(x.reportNo||'-')}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" data-rep="${x.id}">${x.status==='报告合格'?'已合格':'录报告'}</button><button class="btn sm ghost" data-esm="${x.id}">改</button><button class="btn sm danger" data-delsm="${x.id}">删</button></div></td></tr>`; });
+      pageRows.forEach(x=>{ h+=`<tr><td>${esc(x.cat||'-')}</td><td>${esc(x.name)}<br><span style="color:var(--sub);font-size:12px">${esc(x.position||'')}${x.position&&x.note?' · ':''}${esc(x.note||'')}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.spec||'')}</td><td>${esc(x.batch||'')}</td><td>${esc(x.qty||'')}</td><td>${esc(x.sampleDate||'-')}</td><td>${esc(x.sendDate||'-')}</td><td>${stPill(x.status)}</td><td>${esc(x.reportNo||'-')}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" data-rep="${x.id}">${x.status==='合格'?'已合格':'录报告'}</button><button class="btn sm ghost" data-esm="${x.id}">改</button><button class="btn sm danger" data-delsm="${x.id}">删</button></div></td></tr>`; });
       h+=`</tbody></table></div>`;
       h+=renderPager(total, curPage, pageSize, 'sample');
     }
@@ -2410,7 +2410,7 @@ function bindSample(){ const sm=load(K.sample,[]);
   bindPager('sample', (p)=>{ window.__smPage=p; render('sample'); });
   document.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{
     const x=sm.find(i=>i.id===b.dataset.rep);
-    const curReport = x.report==='报告合格'?'合格':(x.report==='报告不合格'?'不合格':(x.report||'合格'));
+    const curReport = x.report==='合格'?'合格':(x.report==='不合格'?'不合格':(x.report||'合格'));
     showModal(`<button class="close" onclick="closeModal()">×</button>
       <h3>录入报告</h3>
       <div class="field"><label>报告结论</label>
@@ -2424,7 +2424,7 @@ function bindSample(){ const sm=load(K.sample,[]);
     document.getElementById('repSaveBtn').onclick=()=>{
       const result=document.querySelector('input[name="repResult"]:checked')?.value||'合格';
       const no=document.getElementById('repNoInput').value.trim();
-      x.status = result==='合格'?'报告合格':'报告不合格';
+      x.status = result==='合格'?'合格':'不合格';
       x.report = result;
       if(no) x.reportNo=no;
       save(K.sample,sm); closeModal(); toast('报告已更新'); render('sample');
@@ -2447,12 +2447,12 @@ function openSmModal(x, presetName, presetCat){
     <div class="field half"><label>取样数量</label><input id="m_qty" value="${esc(x?.qty||'')}"></div>
     <div class="field half"><label>取样时间</label><input id="m_sampleDate" type="date" value="${esc(x?.sampleDate||'')}"></div>
     <div class="field half"><label>送样时间</label><input id="m_sendDate" type="date" value="${esc(x?.sendDate||'')}"></div>
-    <div class="field half"><label>状态</label><select id="m_status">${['已取样','已送检','报告合格','报告不合格'].map(s=>`<option ${x?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="field half"><label>状态</label><select id="m_status">${['已取样','已送检','合格','不合格'].map(s=>`<option ${x?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="field"><label>备注</label><textarea id="m_note">${esc(x?.note||'')}</textarea>${aiOptBtn('m_note','sample')}</div>
     <button class="btn" style="width:100%" onclick="saveSm(${e?`'${x.id}'`:'null'})">保存</button>`);
 }
 function saveSm(id){ const sm=load(K.sample,[]); const d={proj:val('m_proj'),cat:val('m_cat'),name:val('m_name'),position:val('m_pos'),spec:val('m_spec'),batch:val('m_batch'),qty:val('m_qty'),sampleDate:val('m_sampleDate'),sendDate:val('m_sendDate'),status:val('m_status'),note:val('m_note')};
-  if(!d.name){ toast('请填写名称'); return; } if(id){ Object.assign(sm.find(x=>x.id===id),d); } else { sm.unshift({id:uid(),date:todayDisplay(),report:d.status==='报告合格'?'报告合格':'待报告',...d}); } save(K.sample,sm); closeModal(); toast('已保存'); render('sample'); }
+  if(!d.name){ toast('请填写名称'); return; } if(id){ Object.assign(sm.find(x=>x.id===id),d); } else { sm.unshift({id:uid(),date:todayDisplay(),report:d.status==='合格'?'合格':'待报告',...d}); } save(K.sample,sm); closeModal(); toast('已保存'); render('sample'); }
 
 /* ---- 材料进场签认（质量监理子技能） ---- */
 /* ================= 参建单位（五方主体） ================= */

@@ -1709,7 +1709,8 @@ function bindToday(){
 
 /* ============ 渲染入口 ============ */
 let _investChart = null;
-function disposeInvestChart(){ if(_investChart){ try{ _investChart.dispose(); }catch(e){} _investChart=null; } }
+let _investRateChart = null;
+function disposeInvestChart(){ if(_investChart){ try{ _investChart.dispose(); }catch(e){} _investChart=null; } if(_investRateChart){ try{ _investRateChart.dispose(); }catch(e){} _investRateChart=null; } }
 function disposeAllCharts(){ disposeOverviewCharts(); disposeInvestChart(); }
 
 function render(page){
@@ -1774,7 +1775,7 @@ function quickStatsHTML(){
     ["未处理问题", load(K.insp,[]).filter(x=>x.status!=="已处理").length, 'var(--amber)'],
     ["旁站记录", load(K.side,[]).length, 'var(--purple)'],
     ["见证取样", load(K.sample,[]).filter(x=>x.status!=="报告合格").length, 'var(--blue)'],
-    ["投资签认", "¥"+(load(K.invest,[]).filter(x=>x.status==="已签认"||x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0)/10000).toFixed(1)+"万", 'var(--green)'],
+    ["投资签认", "¥"+(load(K.invest,[]).filter(x=>x.type!=="预付款"&&(x.status==="已签认"||x.status==="已支付")).reduce((s,x)=>s+Number(x.amount||0),0)/10000).toFixed(1)+"万", 'var(--green)'],
     ["监理通知单", load(K.notice,[]).length, 'var(--red)'],
     ["规划细则", load(K.plan,[]).filter(x=>x.status!=="已批准").length, 'var(--purple)'],
     ["检查验收", load(K.check,[]).length, 'var(--blue)'],
@@ -1805,7 +1806,7 @@ function overviewHTML(){
   const noticeOpen = notice.filter(x=>!x.docx).length;
   const letterWait = letter.filter(x=>x.status==="未回复"&&x.type!=="工作联系单").length;
   const meetingTodo = meeting.length;
-  const investSigned = invest.filter(x=>x.status==="已签认"||x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
+  const investSigned = invest.filter(x=>x.type!=="预付款"&&(x.status==="已签认"||x.status==="已支付")).reduce((s,x)=>s+Number(x.amount||0),0);
   const contractTotal = getContractTotal();
   const investRate = Math.min(100, (investSigned/contractTotal*100)).toFixed(1);
   const remainWork = Math.max(0, 100 - proj.progress);
@@ -1896,8 +1897,8 @@ function overviewHTML(){
       <div class="ring-info">
         <div class="ring-title">投资完成率</div>
         <div class="ring-value" id="ringInvestValue" data-to="${investRate}" data-suf="%" data-dec="1" style="color:#22d3a6">0%</div>
-        <div class="ring-desc">已计量支付 ${investRate}% · 待支付 ${(100-investRate).toFixed(1)}%</div>
-        <div class="ring-meta"><span><b>合同价</b> ¥${(contractTotal/10000).toFixed(0)} 万 · <b>本月应付</b> ¥${(investSigned/10000).toFixed(0)} 万</span></div>
+        <div class="ring-desc">进度款已支付 ${investRate}% · 不含预付款</div>
+        <div class="ring-meta"><span><b>合同价</b> ¥${(contractTotal/10000).toFixed(0)} 万 · <b>已签认</b> ¥${(investSigned/10000).toFixed(0)} 万</span></div>
       </div>
     </div>
   </div>
@@ -2686,22 +2687,25 @@ function investHTML(){
   if(!PERM[ROLE].finance){ return h+`<div class="card"><span class="pill red">当前无投资监理权限</span></div>`; }
   const inv=load(K.invest,[]);
   const totalAll = inv.reduce((s,x)=>s+Number(x.amount||0),0);
-  const totalSign=inv.filter(x=>x.status==="已签认"||x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
-  const totalPaid=inv.filter(x=>x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
+  // 预付款单独计算，不计入进度款签认与投资完成率
+  const prepaySign = inv.filter(x=>x.type==="预付款"&&(x.status==="已签认"||x.status==="已支付")).reduce((s,x)=>s+Number(x.amount||0),0);
+  const prepayPaid = inv.filter(x=>x.type==="预付款"&&x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalSign=inv.filter(x=>x.type!=="预付款"&&(x.status==="已签认"||x.status==="已支付")).reduce((s,x)=>s+Number(x.amount||0),0);
+  const totalPaid=inv.filter(x=>x.type!=="预付款"&&x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0);
   const totalReview=inv.filter(x=>x.status==="审查中").reduce((s,x)=>s+Number(x.amount||0),0);
   const contractTotal = getContractTotal();
   const rate = Math.min(+(totalSign/contractTotal*100).toFixed(1), 100);
 
   h+=`<div class="grid grid-4" style="margin-bottom:6px">`;
   h+=`<div class="card inv-kpi" style="margin:0;cursor:pointer" id="editContractTotal" title="点击修改合同总价"><div class="n" style="color:var(--ink-1)">¥${contractTotal.toLocaleString()}</div><div class="l">合同总价</div><div class="s">${(contractTotal/10000).toFixed(1)} 万 · ✎ 点击修改</div></div>`;
-  h+=`<div class="card inv-kpi" style="margin:0"><div class="n" style="color:var(--green)">¥${totalSign.toLocaleString()}</div><div class="l">累计签认/支付</div><div class="s">${(totalSign/10000).toFixed(1)} 万 · 完成率 ${rate}%</div></div>`;
-  h+=`<div class="card inv-kpi" style="margin:0"><div class="n" style="color:var(--blue)">¥${totalPaid.toLocaleString()}</div><div class="l">已支付</div><div class="s">占签认 ${totalSign?Math.round(totalPaid/totalSign*100):0}%</div></div>`;
+  h+=`<div class="card inv-kpi" style="margin:0"><div class="n" style="color:var(--green)">¥${totalSign.toLocaleString()}</div><div class="l">累计签认/支付（进度款）</div><div class="s">${(totalSign/10000).toFixed(1)} 万 · 完成率 ${rate}%</div></div>`;
+  h+=`<div class="card inv-kpi" style="margin:0"><div class="n" style="color:var(--blue)">¥${prepaySign.toLocaleString()}</div><div class="l">预付款（单独核算）</div><div class="s">已付 ¥${(prepayPaid/10000).toFixed(1)} 万 · 不计入完成率</div></div>`;
   h+=`<div class="card inv-kpi" style="margin:0"><div class="n" style="color:var(--warn)">¥${totalReview.toLocaleString()}</div><div class="l">审查中</div><div class="s">${inv.filter(x=>x.status==="审查中").length} 笔待审</div></div>`;
   h+=`</div>`;
 
   h+=`<div class="grid grid-2" style="margin-bottom:6px">`;
-  h+=`<div class="card" style="margin:0"><div style="font-weight:700;margin-bottom:8px;font-size:14px">投资完成率</div><div class="inv-progress"><div class="bar"><i style="width:${rate}%"></i></div><div class="meta"><span>已签认 ¥${(totalSign/10000).toFixed(1)} 万</span><span>${rate}% / 100%</span></div></div></div>`;
-  h+=`<div class="card" style="margin:0"><div style="font-weight:700;margin-bottom:8px;font-size:14px">款项类型分布</div><div id="invTypeChart" class="chart" style="height:180px"></div></div>`;
+  h+=`<div class="card" style="margin:0"><div style="font-weight:700;margin-bottom:8px;font-size:14px">投资完成率（进度款，不含预付款）</div><div id="invRateChart" class="chart" style="height:220px"></div></div>`;
+  h+=`<div class="card" style="margin:0"><div style="font-weight:700;margin-bottom:8px;font-size:14px">款项类型分布</div><div id="invTypeChart" class="chart" style="height:220px"></div></div>`;
   h+=`</div>`;
 
   const filt = window._invFilter || 'all';
@@ -2736,18 +2740,43 @@ function bindInvest(){
   });
   if(window.__focusId){ const f=inv.find(i=>i.id===window.__focusId); if(f){ openInvModal(f); } window.__focusId=null; }
 
+  // 投资完成率环形图
+  if(_investRateChart){ try{_investRateChart.dispose();}catch(e){} _investRateChart=null; }
+  const contractTotal = getContractTotal();
+  const totalSign = inv.filter(x=>x.type!=="预付款"&&(x.status==="已签认"||x.status==="已支付")).reduce((s,x)=>s+Number(x.amount||0),0);
+  const rateVal = Math.min(+(totalSign/contractTotal*100).toFixed(1), 100);
+  const rateEl = document.getElementById('invRateChart');
+  if(rateEl){
+    _investRateChart = echarts.init(rateEl);
+    _investRateChart.setOption({
+      tooltip:{trigger:'item',formatter:'{b}: ¥{c} ({d}%)'},
+      legend:{type:'scroll',orient:'horizontal',bottom:5,left:'center',width:'90%',itemGap:24,itemWidth:12,itemHeight:12,textStyle:{fontSize:11,color:'#64748b'}},
+      title:{text:rateVal+'%',left:'center',top:'38%',textStyle:{fontSize:20,fontWeight:700,color:'#533afd'}},
+      series:[{type:'pie',radius:['38%','58%'],center:['50%','46%'],
+        label:{show:false},
+        labelLine:{show:false},
+        data:[
+          {name:'已签认/支付',value:totalSign,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#533afd'},{offset:1,color:'#7c5cff'}])}},
+          {name:'未完成',value:Math.max(contractTotal-totalSign,0),itemStyle:{color:'#e2e8f0'}}
+        ]}]
+    });
+  }
+
   // 类型分布图
   const typeMap={}; inv.forEach(x=>{ typeMap[x.type]=(typeMap[x.type]||0)+Number(x.amount||0); });
   const typeData=Object.keys(typeMap).map(k=>({name:k,value:+typeMap[k].toFixed(0)}));
   if(typeData.length===0) typeData.push({name:'暂无',value:1});
-  const colors={'进度款':'#533afd','计量':'#7c5cff','变更':'#ff8a5c','索赔':'#ef4444'};
+  const colors={'进度款':'#533afd','计量':'#7c5cff','变更':'#ff8a5c','索赔':'#ef4444','预付款':'#f59e0b'};
   const el=document.getElementById('invTypeChart');
   if(el){
     _investChart = echarts.init(el);
     _investChart.setOption({
       tooltip:{trigger:'item',formatter:'{b}: ¥{c} ({d}%)'},
-      series:[{type:'pie',radius:['45%','70%'],center:['50%','50%'],
-        label:{formatter:'{b}\n{d}%'}, data:typeData.map(d=>({name:d.name,value:d.value,itemStyle:{color:colors[d.name]||'#64748b'}}))}]
+      legend:{type:'scroll',orient:'horizontal',bottom:5,left:'center',width:'90%',itemGap:24,itemWidth:12,itemHeight:12,textStyle:{fontSize:11,color:'#64748b'}},
+      series:[{type:'pie',radius:['38%','58%'],center:['50%','46%'],
+        label:{show:false},
+        labelLine:{show:false},
+        data:typeData.map(d=>({name:d.name,value:d.value,itemStyle:{color:colors[d.name]||'#64748b'}}))}]
     });
   }
 }
@@ -2755,7 +2784,7 @@ function openInvModal(x){
   const e=!!x;
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>${e?'编辑款项':'新增计量/进度款/变更'}</h3>
     <div class="field"><label>关联项目</label>${projOptions('iv_proj', x?.proj)}</div>
-    <div class="field half"><label>类型</label><select id="iv_type">${['进度款','计量','变更','索赔'].map(s=>`<option ${x?.type===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="field half"><label>类型</label><select id="iv_type">${['进度款','计量','变更','索赔','预付款'].map(s=>`<option ${x?.type===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="field half"><label>状态</label><select id="iv_status">${['审查中','已签认','已支付'].map(s=>`<option ${x?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="field"><label>内容说明</label><input id="iv_content" value="${esc(x?.content||'')}"></div>
     <div class="field half"><label>金额(¥)</label><input id="iv_amt" type="number" value="${x?.amount??0}"></div>
@@ -3061,7 +3090,7 @@ function genLog(type){
   const ins=load(K.insp,[]).filter(x=>x.proj===pid);
   const sides=load(K.side,[]).filter(x=>x.proj===pid); const samples=load(K.sample,[]).filter(x=>x.proj===pid);
   const mats=load(K.material,[]).filter(x=>x.proj===pid);
-  const investSum=load(K.invest,[]).filter(x=>x.proj===pid&&(x.status==='已签认'||x.status==='已支付')).reduce((s,x)=>s+Number(x.amount||0),0);
+  const investSum=load(K.invest,[]).filter(x=>x.proj===pid&&x.type!=="预付款"&&(x.status==='已签认'||x.status==='已支付')).reduce((s,x)=>s+Number(x.amount||0),0);
   const pr=load(K.progress,[]).filter(x=>x.proj===pid).slice(-1)[0];
   // 自动数据汇总
   const day=ins.filter(x=>x.date===t);

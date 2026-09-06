@@ -1518,6 +1518,47 @@ function collapseRemove(rowEl, cb){
   rowEl.addEventListener('transitionend', function h(e){ if(e.propertyName==='max-height' || e.propertyName==='opacity'){ rowEl.removeEventListener('transitionend', h); fin(); } });
   setTimeout(fin, 420);
 }
+/* 通用分页函数：生成分页控件 HTML */
+function renderPager(total, page, pageSize, pageKey){
+  const totalPages = Math.max(1, Math.ceil(total/pageSize));
+  page = Math.min(Math.max(1, page), totalPages);
+  let pages = [];
+  if(totalPages <= 7){
+    for(let i=1;i<=totalPages;i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if(page > 3) pages.push('...');
+    const start = Math.max(2, page-1);
+    const end = Math.min(totalPages-1, page+1);
+    for(let i=start;i<=end;i++) pages.push(i);
+    if(page < totalPages-2) pages.push('...');
+    pages.push(totalPages);
+  }
+  let h = `<div class="pager" data-key="${pageKey}" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding:8px 0;font-size:13px">
+    <span style="color:var(--ink-3);margin-right:8px">共 ${total} 条 / ${totalPages} 页</span>
+    <button class="btn sm ghost" data-page="1" ${page===1?'disabled style="opacity:.4;cursor:not-allowed"':''}>首页</button>
+    <button class="btn sm ghost" data-page="${page-1}" ${page===1?'disabled style="opacity:.4;cursor:not-allowed"':''}>上一页</button>`;
+  pages.forEach(p=>{
+    if(p==='...') h += `<span style="color:var(--ink-3);padding:0 4px">…</span>`;
+    else h += `<button class="btn sm ${p===page?'':'ghost'}" data-page="${p}" style="${p===page?'background:var(--accent);color:#fff;border-color:var(--accent)':''}">${p}</button>`;
+  });
+  h += `<button class="btn sm ghost" data-page="${page+1}" ${page===totalPages?'disabled style="opacity:.4;cursor:not-allowed"':''}>下一页</button>
+    <button class="btn sm ghost" data-page="${totalPages}" ${page===totalPages?'disabled style="opacity:.4;cursor:not-allowed"':''}>末页</button>
+    <span style="margin-left:8px;display:flex;align-items:center;gap:4px">跳转 <input type="number" min="1" max="${totalPages}" value="${page}" style="width:50px;padding:4px 6px;border:1px solid var(--border-soft);border-radius:6px;font-size:12px" class="page-jump"> 页</span>
+  </div>`;
+  return h;
+}
+/* 绑定分页控件事件 */
+function bindPager(pageKey, onPage){
+  document.querySelectorAll(`.pager[data-key="${pageKey}"]`).forEach(pager=>{
+    pager.querySelectorAll('button[data-page]').forEach(btn=>{
+      if(btn.disabled) return;
+      btn.onclick=()=>{ const p=parseInt(btn.dataset.page); onPage(p); };
+    });
+    const jump=pager.querySelector('.page-jump');
+    if(jump){ jump.onkeydown=(e)=>{ if(e.key==='Enter'){ const p=parseInt(jump.value); if(p&&p>0) onPage(p); } }; }
+  });
+}
 /* 自定义输入弹窗：替代原生 prompt()，在禁用 prompt 的预览/沙箱环境下也能工作 */
 function promptX(msg, def, onOk){
   showModal(`<button class="close" onclick="closeModal()">×</button>
@@ -2064,23 +2105,33 @@ function inspectHTML(){
   let h=`<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z"/><path d="M21 21l-4.3-4.3"/></svg>巡视检查记录与问题整改追踪</div>`;
   h+=`<div class="btn-row"><button class="btn" id="addInsp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>录入巡查记录</button></div>`;
   if(ins.length===0) h+=`<div class="empty-hint">暂无巡查记录</div>`;
-  h+=`<div class="grid grid-2">`;
-  ins.forEach(x=>{
-    h+=`<div class="proj">
-      <div style="display:flex;justify-content:space-between"><h3 style="font-size:14.5px">${esc(x.type)}巡查 · ${esc(x.spot)}</h3>${inspBadge(x.status)}</div>
-      <div class="pcode">${projName(x.proj)} · ${x.date} · ${esc(x.finder)}</div>
-      <div style="margin:8px 0;font-size:13.5px">${esc(x.problem)}</div>
-      <div class="stat-row"><span>等级 <b style="color:${x.level==='严重'?'var(--red)':'var(--amber)'}">${x.level}</b></span><span>责任 <b>${esc(x.resp)}</b></span><span>期限 <b>${x.due}</b></span></div>
-      ${x.photos&&x.photos.length?`<div class="photo-grid">${x.photos.map(p=>`<img src="${p}" onclick="zoom('${p}')">`).join('')}</div>`:`<div class="pcode" style="margin-top:8px">无现场照片</div>`}
-      ${x.status==='已处理'?`<div class="pcode" style="margin-top:8px;color:var(--green)">已处理：${esc(x.closeNote||'已复核')}</div>`:''}
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        ${PERM[ROLE].closeIssue&&x.status!=='已处理'?`<button class="btn sm" data-close="${x.id}">标记已处理</button>`:''}
-        <button class="btn sm ghost" data-view="${x.id}">详情</button>
-        ${PERM[ROLE].inspect?`<button class="btn sm ghost" data-edit="${x.id}">编辑</button>`:''}
-        ${PERM[ROLE].inspect?`<button class="btn sm danger" onclick="deleteItem('${K.insp}','${x.id}')">删</button>`:''}
-      </div></div>`;
-  });
-  return h+`</div><div class="mtip">💡 现场照片自动压缩存储（≤9张）。</div>`;
+  else {
+    const pageSize = 20;
+    const total = ins.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__inspPage||1), totalPages);
+    window.__inspPage = curPage;
+    const pageRows = ins.slice((curPage-1)*pageSize, curPage*pageSize);
+    h+=`<div class="grid grid-2">`;
+    pageRows.forEach(x=>{
+      h+=`<div class="proj">
+        <div style="display:flex;justify-content:space-between"><h3 style="font-size:14.5px">${esc(x.type)}巡查 · ${esc(x.spot)}</h3>${inspBadge(x.status)}</div>
+        <div class="pcode">${projName(x.proj)} · ${x.date} · ${esc(x.finder)}</div>
+        <div style="margin:8px 0;font-size:13.5px">${esc(x.problem)}</div>
+        <div class="stat-row"><span>等级 <b style="color:${x.level==='严重'?'var(--red)':'var(--amber)'}">${x.level}</b></span><span>责任 <b>${esc(x.resp)}</b></span><span>期限 <b>${x.due}</b></span></div>
+        ${x.photos&&x.photos.length?`<div class="photo-grid">${x.photos.map(p=>`<img src="${p}" onclick="zoom('${p}')">`).join('')}</div>`:`<div class="pcode" style="margin-top:8px">无现场照片</div>`}
+        ${x.status==='已处理'?`<div class="pcode" style="margin-top:8px;color:var(--green)">已处理：${esc(x.closeNote||'已复核')}</div>`:''}
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          ${PERM[ROLE].closeIssue&&x.status!=='已处理'?`<button class="btn sm" data-close="${x.id}">标记已处理</button>`:''}
+          <button class="btn sm ghost" data-view="${x.id}">详情</button>
+          ${PERM[ROLE].inspect?`<button class="btn sm ghost" data-edit="${x.id}">编辑</button>`:''}
+          ${PERM[ROLE].inspect?`<button class="btn sm danger" onclick="deleteItem('${K.insp}','${x.id}')">删</button>`:''}
+        </div></div>`;
+    });
+    h+=`</div>`;
+    h+=renderPager(total, curPage, pageSize, 'inspect');
+  }
+  return h+`<div class="mtip">💡 现场照片自动压缩存储（≤9张）。</div>`;
 }
 function bindInspect(){
   const ins=load(K.insp,[]);
@@ -2088,6 +2139,7 @@ function bindInspect(){
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>openInspModal(ins.find(i=>i.id===b.dataset.view),null,true));
   document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openInspModal(ins.find(i=>i.id===b.dataset.edit),null));
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>openCloseModal(ins.find(i=>i.id===b.dataset.close)));
+  bindPager('inspect', (p)=>{ window.__inspPage=p; render('inspect'); });
   if(window.__focusId){ const f=ins.find(i=>i.id===window.__focusId); if(f){ openInspModal(f,null,false); } window.__focusId=null; }
 }
 function openInspModal(x, pid, viewOnly){
@@ -2153,22 +2205,32 @@ function sideHTML(){
     return hay.includes(kw);
   });
   if(filtered.length===0) h+=`<div class="empty-hint">暂无符合条件的旁站记录</div>`;
-  h+=`<div class="grid grid-2">`;
-  filtered.forEach(x=>{
-    const ab = x.abnormal && x.abnormal!=="无";
-    const catTag = (x.big||'质量') + (x.sub && x.sub!=='其他' ? ' · '+x.sub : '');
-    h+=`<div class="proj">
-      <div style="display:flex;justify-content:space-between"><h3 style="font-size:14.5px">${esc(x.spot)}</h3>${ab?'<span class="pill red">有异常</span>':'<span class="pill green">正常</span>'}</div>
-      <div class="pcode">${projName(x.proj)} · ${x.date}${formatWeather(x)?' · '+esc(formatWeather(x)):''}</div>
-      <div class="kv"><span>类别：<b>${esc(catTag)}</b></span><span>时间：<b>${esc(x.start||'')}-${esc(x.end||'')}</b></span><span>见证：<b>${esc(x.witnesser||'')}</b></span></div>
-      <div style="font-size:13.5px;margin-top:8px">${esc(x.situation||'')}</div>
-      ${ab?`<div class="redline" style="margin-top:8px"><b>异常：</b>${esc(x.abnormal)}</div>`:''}
-      <div style="margin-top:10px;display:flex;gap:10px"><button class="btn sm ghost" data-es="${x.id}">编辑</button><button class="btn sm danger" data-delside="${x.id}">删</button>${ab && x.status!=='已处理'?`<button class="btn sm" data-sidehandled="${x.id}">已处理</button>`:''}${x.status==='已处理'?'<span class="pill green" style="margin-left:auto">已处理</span>':''}</div>
-    </div>`;
-  });
-  return h+`</div>`;
+  else {
+    const pageSize = 20;
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__sidePage||1), totalPages);
+    window.__sidePage = curPage;
+    const pageRows = filtered.slice((curPage-1)*pageSize, curPage*pageSize);
+    h+=`<div class="grid grid-2">`;
+    pageRows.forEach(x=>{
+      const ab = x.abnormal && x.abnormal!=="无";
+      const catTag = (x.big||'质量') + (x.sub && x.sub!=='其他' ? ' · '+x.sub : '');
+      h+=`<div class="proj">
+        <div style="display:flex;justify-content:space-between"><h3 style="font-size:14.5px">${esc(x.spot)}</h3>${ab?'<span class="pill red">有异常</span>':'<span class="pill green">正常</span>'}</div>
+        <div class="pcode">${projName(x.proj)} · ${x.date}${formatWeather(x)?' · '+esc(formatWeather(x)):''}</div>
+        <div class="kv"><span>类别：<b>${esc(catTag)}</b></span><span>时间：<b>${esc(x.start||'')}-${esc(x.end||'')}</b></span><span>见证：<b>${esc(x.witnesser||'')}</b></span></div>
+        <div style="font-size:13.5px;margin-top:8px">${esc(x.situation||'')}</div>
+        ${ab?`<div class="redline" style="margin-top:8px"><b>异常：</b>${esc(x.abnormal)}</div>`:''}
+        <div style="margin-top:10px;display:flex;gap:10px"><button class="btn sm ghost" data-es="${x.id}">编辑</button><button class="btn sm danger" data-delside="${x.id}">删</button>${ab && x.status!=='已处理'?`<button class="btn sm" data-sidehandled="${x.id}">已处理</button>`:''}${x.status==='已处理'?'<span class="pill green" style="margin-left:auto">已处理</span>':''}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+    h+=renderPager(total, curPage, pageSize, 'side');
+  }
+  return h;
 }
-function bindSide(){ const ss=load(K.side,[]); document.getElementById('addSide')?.addEventListener('click',()=>openSideModal(null)); document.getElementById('tplSide')?.addEventListener('click',openSideTemplate); document.querySelectorAll('[data-es]').forEach(b=>b.onclick=()=>openSideModal(ss.find(i=>i.id===b.dataset.es))); document.querySelectorAll('[data-delside]').forEach(b=>b.onclick=()=>{ const id=b.dataset.delside; const x=ss.find(i=>i.id===id); if(x){ confirmX(`确认删除旁站记录：${x.spot}？`, ()=>{ save(K.side, ss.filter(i=>i.id!==id)); toast('已删除'); render('side'); }); } }); document.querySelectorAll('[data-sidehandled]').forEach(b=>b.onclick=()=>{ const id=b.dataset.sidehandled; const x=ss.find(i=>i.id===id); if(x){ x.status='已处理'; save(K.side,ss); toast('已标记为已处理'); render('side'); } }); renderSideCats(); if(window.__focusId){ const f=ss.find(i=>i.id===window.__focusId); if(f){ openSideModal(f); } window.__focusId=null; } }
+function bindSide(){ const ss=load(K.side,[]); document.getElementById('addSide')?.addEventListener('click',()=>openSideModal(null)); document.getElementById('tplSide')?.addEventListener('click',openSideTemplate); document.querySelectorAll('[data-es]').forEach(b=>b.onclick=()=>openSideModal(ss.find(i=>i.id===b.dataset.es))); document.querySelectorAll('[data-delside]').forEach(b=>b.onclick=()=>{ const id=b.dataset.delside; const x=ss.find(i=>i.id===id); if(x){ confirmX(`确认删除旁站记录：${x.spot}？`, ()=>{ save(K.side, ss.filter(i=>i.id!==id)); toast('已删除'); render('side'); }); } }); document.querySelectorAll('[data-sidehandled]').forEach(b=>b.onclick=()=>{ const id=b.dataset.sidehandled; const x=ss.find(i=>i.id===id); if(x){ x.status='已处理'; save(K.side,ss); toast('已标记为已处理'); render('side'); } }); bindPager('side', (p)=>{ window.__sidePage=p; render('side'); }); renderSideCats(); if(window.__focusId){ const f=ss.find(i=>i.id===window.__focusId); if(f){ openSideModal(f); } window.__focusId=null; } }
 function renderSideCats(){ const big=window.__sideBig||'全部'; const sub=window.__sideSub||'全部'; const el=document.getElementById('sideCats'); if(!el) return;
   let chips = [`<button class="chip ${big==='全部'?'on':''}" onclick="setSideBig('全部')">全部</button>`];
   SIDE_BIG_CATS.forEach(b=>{ chips.push(`<button class="chip ${big===b?'on':''}" onclick="setSideBig('${b}')">${esc(b)}</button>`); });
@@ -2307,9 +2369,16 @@ function sampleHTML(){
     if(sm.length===0) h+=`<div class="empty-hint">暂无取样记录，可在「知识库」标签中登记。</div>`;
     else if(smList.length===0) h+=`<div class="empty-hint">无匹配的取样记录</div>`;
     else {
+      const pageSize = 20;
+      const total = smList.length;
+      const totalPages = Math.max(1, Math.ceil(total/pageSize));
+      const curPage = Math.min(Math.max(1, window.__smPage||1), totalPages);
+      window.__smPage = curPage;
+      const pageRows = smList.slice((curPage-1)*pageSize, curPage*pageSize);
       h+=`<div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>分类</th><th>材料/试件</th><th>项目</th><th>规格</th><th>代表批量</th><th>取样数</th><th>取样时间</th><th>送样时间</th><th>状态</th><th>报告</th><th>操作</th></tr></thead><tbody>`;
-      smList.forEach(x=>{ h+=`<tr><td>${esc(x.cat||'-')}</td><td>${esc(x.name)}<br><span style="color:var(--sub);font-size:12px">${esc(x.position||'')}${x.position&&x.note?' · ':''}${esc(x.note||'')}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.spec||'')}</td><td>${esc(x.batch||'')}</td><td>${esc(x.qty||'')}</td><td>${esc(x.sampleDate||'-')}</td><td>${esc(x.sendDate||'-')}</td><td>${stPill(x.status)}</td><td>${esc(x.reportNo||'')}${x.reportNo&&x.report?`<br><span style="color:var(--sub);font-size:12px">${esc(x.report)}</span>`:esc(x.report||'')}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" data-rep="${x.id}">${x.status==='报告合格'?'已合格':'录报告'}</button><button class="btn sm ghost" data-esm="${x.id}">改</button><button class="btn sm danger" data-delsm="${x.id}">删</button></div></td></tr>`; });
+      pageRows.forEach(x=>{ h+=`<tr><td>${esc(x.cat||'-')}</td><td>${esc(x.name)}<br><span style="color:var(--sub);font-size:12px">${esc(x.position||'')}${x.position&&x.note?' · ':''}${esc(x.note||'')}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.spec||'')}</td><td>${esc(x.batch||'')}</td><td>${esc(x.qty||'')}</td><td>${esc(x.sampleDate||'-')}</td><td>${esc(x.sendDate||'-')}</td><td>${stPill(x.status)}</td><td>${esc(x.reportNo||'-')}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" data-rep="${x.id}">${x.status==='报告合格'?'已合格':'录报告'}</button><button class="btn sm ghost" data-esm="${x.id}">改</button><button class="btn sm danger" data-delsm="${x.id}">删</button></div></td></tr>`; });
       h+=`</tbody></table></div>`;
+      h+=renderPager(total, curPage, pageSize, 'sample');
     }
   }
   return h;
@@ -2334,11 +2403,33 @@ function renderSmLib(){
 }
 function setSmCat(c){ window.__smCat=c; renderSmLib(); }
 function bindSample(){ const sm=load(K.sample,[]);
-  document.querySelectorAll('.sm-tab').forEach(b=>b.addEventListener('click',()=>{ window.__smTab=b.dataset.tab; render('sample'); }));
+  document.querySelectorAll('.sm-tab').forEach(b=>b.addEventListener('click',()=>{ window.__smTab=b.dataset.tab; window.__smPage=1; render('sample'); }));
   document.getElementById('addSm')?.addEventListener('click',()=>openSmModal(null,null,window.__smCat));
   document.querySelectorAll('[data-esm]').forEach(b=>b.onclick=()=>openSmModal(sm.find(i=>i.id===b.dataset.esm)));
   document.querySelectorAll('[data-delsm]').forEach(b=>b.onclick=()=>{ const id=b.dataset.delsm; const x=sm.find(i=>i.id===id); if(x){ confirmX(`确认删除取样记录：${x.name}？`, ()=>{ save(K.sample, sm.filter(i=>i.id!==id)); toast('已删除'); render('sample'); }); } });
-  document.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{ const x=sm.find(i=>i.id===b.dataset.rep); promptX('报告结论（合格/不合格）：', x.report==='报告合格'?'报告合格':'报告不合格', (r)=>{ if(r===null||r==='') return; x.status=r; x.report=r; promptX('报告编号（可选）：', x.reportNo||'', (no)=>{ if(no!==null) x.reportNo=no; save(K.sample,sm); toast('已更新'); render('sample'); }); }); });
+  bindPager('sample', (p)=>{ window.__smPage=p; render('sample'); });
+  document.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{
+    const x=sm.find(i=>i.id===b.dataset.rep);
+    const curReport = x.report==='报告合格'?'合格':(x.report==='报告不合格'?'不合格':(x.report||'合格'));
+    showModal(`<button class="close" onclick="closeModal()">×</button>
+      <h3>录入报告</h3>
+      <div class="field"><label>报告结论</label>
+        <div style="display:flex;flex-direction:column;gap:12px;margin:8px 0">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel-1)"><input type="radio" name="repResult" value="合格" ${curReport==='合格'?'checked':''} style="width:18px;height:18px"> <span style="color:#16a34a;font-weight:600;font-size:15px">合格</span></label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel-1)"><input type="radio" name="repResult" value="不合格" ${curReport==='不合格'?'checked':''} style="width:18px;height:18px"> <span style="color:#dc2626;font-weight:600;font-size:15px">不合格</span></label>
+        </div>
+      </div>
+      <div class="field"><label>报告编号（可选）</label><input id="repNoInput" value="${esc(x.reportNo||'')}" placeholder="如 2024-001"></div>
+      <div class="btn-row"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn" id="repSaveBtn">保存</button></div>`);
+    document.getElementById('repSaveBtn').onclick=()=>{
+      const result=document.querySelector('input[name="repResult"]:checked')?.value||'合格';
+      const no=document.getElementById('repNoInput').value.trim();
+      x.status = result==='合格'?'报告合格':'报告不合格';
+      x.report = result;
+      if(no) x.reportNo=no;
+      save(K.sample,sm); closeModal(); toast('报告已更新'); render('sample');
+    };
+  });
   window.__smCat = window.__smCat || '全部';
   renderSmLib();
 }
@@ -2478,33 +2569,47 @@ function materialHTML(){
   // 表格
   if(mt.length===0) h+=`<div class=\"empty-hint\">暂无材料进场记录，点击「新增进场材料」开始登记</div>`;
   else {
-    h+=`<div class=\"table-wrap\"><table class=\"tbl mt-table\"><thead><tr>
-      <th style=\"width:48px\">序号</th><th>报审日期</th><th>项目</th><th>类别</th><th>材料名称</th><th>规格型号</th>
-      <th>出厂合格证</th><th>检验报告</th><th>代表批量</th><th>验收</th><th>备注</th><th style=\"width:130px\">操作</th>
-    </tr></thead><tbody id=\"mtTbody\">`;
-    mt.forEach((x,i)=>{
-      const acc = x.accept==='验收合格'?'green':(x.accept==='验收不合格'?'red':'amber');
+    const filtered = mt.filter(x=>{
+      const okCat = !_mtFilter.cat || (x.category||'')===_mtFilter.cat;
       const searchKey=`${x.name||''} ${x.spec||''} ${x.cert||''} ${x.report||''} ${x.note||''} ${x.batch||''} ${projName(x.proj)||''} ${x.category||''}`.toLowerCase();
-      h+=`<tr data-cat=\"${esc(x.category||'')}\" data-key=\"${esc(searchKey)}\">
-        <td>${i+1}</td>
-        <td>${esc(x.date||'')}</td>
-        <td>${esc(projName(x.proj))}</td>
-        <td>${esc(x.category||'—')}</td>
-        <td><b>${esc(x.name||'')}</b></td>
-        <td>${esc(x.spec||'')}</td>
-        <td>${esc(x.cert||'')}</td>
-        <td>${esc(x.report||'')}</td>
-        <td>${esc(x.batch||'')}</td>
-        <td><span class=\"pill ${acc}\">${esc(x.accept||'—')}</span></td>
-        <td>${esc(x.note||'')}</td>
-        <td>
-          <button class=\"btn sm\" data-em=\"${x.id}\">编辑</button>
-          ${PERM[ROLE].addProj?`<button class=\"btn sm ghost danger\" data-dm=\"${x.id}\">删</button>`:''}
-        </td>
-      </tr>`;
+      const okKw = !_mtFilter.kw || searchKey.includes(_mtFilter.kw);
+      return okCat && okKw;
     });
-    h+=`</tbody></table></div>`;
-    h+=`<div id=\"mtEmpty\" class=\"empty-hint\" style=\"display:none\">没有匹配「<span id=\"mtEmptyTip\"></span>」的记录</div>`;
+    if(filtered.length===0) h+=`<div class=\"empty-hint\">没有匹配的记录</div>`;
+    else {
+      const pageSize = 20;
+      const total = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(total/pageSize));
+      const curPage = Math.min(Math.max(1, window.__mtPage||1), totalPages);
+      window.__mtPage = curPage;
+      const pageRows = filtered.slice((curPage-1)*pageSize, curPage*pageSize);
+      h+=`<div class=\"table-wrap\"><table class=\"tbl mt-table\"><thead><tr>
+        <th style=\"width:48px\">序号</th><th>报审日期</th><th>项目</th><th>类别</th><th>材料名称</th><th>规格型号</th>
+        <th>出厂合格证</th><th>检验报告</th><th>代表批量</th><th>验收</th><th>备注</th><th style=\"width:130px\">操作</th>
+      </tr></thead><tbody>`;
+      pageRows.forEach((x,i)=>{
+        const acc = x.accept==='验收合格'?'green':(x.accept==='验收不合格'?'red':'amber');
+        h+=`<tr>
+          <td>${(curPage-1)*pageSize+i+1}</td>
+          <td>${esc(x.date||'')}</td>
+          <td>${esc(projName(x.proj))}</td>
+          <td>${esc(x.category||'—')}</td>
+          <td><b>${esc(x.name||'')}</b></td>
+          <td>${esc(x.spec||'')}</td>
+          <td>${esc(x.cert||'')}</td>
+          <td>${esc(x.report||'')}</td>
+          <td>${esc(x.batch||'')}</td>
+          <td><span class=\"pill ${acc}\">${esc(x.accept||'—')}</span></td>
+          <td>${esc(x.note||'')}</td>
+          <td>
+            <button class=\"btn sm\" data-em=\"${x.id}\">编辑</button>
+            ${PERM[ROLE].addProj?`<button class=\"btn sm ghost danger\" data-dm=\"${x.id}\">删</button>`:''}
+          </td>
+        </tr>`;
+      });
+      h+=`</tbody></table></div>`;
+      h+=renderPager(total, curPage, pageSize, 'material');
+    }
   }
   return h;
 }
@@ -2531,11 +2636,11 @@ function bindMaterial(){
   document.getElementById('prtMtLedger')?.addEventListener('click',()=>printMtLedger());
   document.querySelectorAll('#mtChips .chip').forEach(c=>c.onclick=()=>{
     _mtFilter.cat=c.dataset.cat||'';
-    document.querySelectorAll('#mtChips .chip').forEach(x=>x.classList.toggle('on', x===c));
-    applyMtFilter();
+    window.__mtPage=1;
+    render('material');
   });
   const kw=document.getElementById('mtKw');
-  if(kw){ kw.value=_mtFilter.kw; kw.oninput=()=>{ _mtFilter.kw=kw.value.trim().toLowerCase(); applyMtFilter(); }; }
+  if(kw){ kw.value=_mtFilter.kw; kw.oninput=()=>{ _mtFilter.kw=kw.value.trim().toLowerCase(); window.__mtPage=1; render('material'); }; }
   document.querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>openMtModal(mt.find(i=>i.id===b.dataset.em)));
   document.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{
     confirmX('确认删除该材料进场记录？', ()=>{
@@ -2543,6 +2648,7 @@ function bindMaterial(){
       toast('已删除'); render('material');
     });
   });
+  bindPager('material', (p)=>{ window.__mtPage=p; render('material'); });
 }
 function mtFilteredRows(){
   return load(K.material,[]).filter(mtMatch);
@@ -2750,23 +2856,31 @@ function investHTML(){
   h+=`<div class="btn-row" style="align-items:center"><button class="btn" id="addInv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新增计量/款项</button><div style="margin-left:auto;display:flex;gap:8px"><button class="${btnCls('all')}" id="invFilterAll">全部</button><button class="${btnCls('sign')}" id="invFilterSign">已签认/已支付</button><button class="${btnCls('review')}" id="invFilterReview">审查中</button></div></div>`;
 
   if(filtList.length===0){ h+=`<div class="empty-hint">暂无符合条件的投资监理记录</div>`; return h; }
+  const pageSize = 20;
+  const total = filtList.length;
+  const totalPages = Math.max(1, Math.ceil(total/pageSize));
+  const curPage = Math.min(Math.max(1, window.__invPage||1), totalPages);
+  window.__invPage = curPage;
+  const pageRows = filtList.slice((curPage-1)*pageSize, curPage*pageSize);
   h+=`<div class="card" style="padding:0;overflow:auto"><table class="inv-table"><thead><tr><th>日期</th><th>类型</th><th>项目</th><th>内容</th><th style="text-align:right">金额(¥)</th><th>状态</th><th>凭证号</th><th>操作</th></tr></thead><tbody>`;
-  filtList.forEach(x=>{
+  pageRows.forEach(x=>{
     const nextLabel = x.status==='审查中'?'签认':x.status==='已签认'?'支付':'重置';
     const op = PERM[ROLE].finance ? `<div style="display:flex;gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ei="${x.id}">编辑</button><button class="btn sm ghost" data-si="${x.id}">${nextLabel}</button><button class="btn sm danger" onclick="deleteItem('${K.invest}','${x.id}')">删</button></div>` : '';
     h+=`<tr><td>${esc(x.date)}</td><td><span class="pill">${esc(x.type)}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.content||'')}</td><td style="text-align:right;font-weight:600">${Number(x.amount||0).toLocaleString()}</td><td>${stPill(x.status)}</td><td>${esc(x.cert||'')}</td><td>${op}</td></tr>`;
   });
   h+=`</tbody></table></div>`;
+  h+=renderPager(total, curPage, pageSize, 'invest');
   return h;
 }
 function bindInvest(){
   const inv=load(K.invest,[]);
   document.getElementById('addInv')?.addEventListener('click',()=>openInvModal(null));
-  document.getElementById('invFilterAll')?.addEventListener('click',()=>{ window._invFilter='all'; render('invest'); });
-  document.getElementById('invFilterSign')?.addEventListener('click',()=>{ window._invFilter='sign'; render('invest'); });
-  document.getElementById('invFilterReview')?.addEventListener('click',()=>{ window._invFilter='review'; render('invest'); });
+  document.getElementById('invFilterAll')?.addEventListener('click',()=>{ window._invFilter='all'; window.__invPage=1; render('invest'); });
+  document.getElementById('invFilterSign')?.addEventListener('click',()=>{ window._invFilter='sign'; window.__invPage=1; render('invest'); });
+  document.getElementById('invFilterReview')?.addEventListener('click',()=>{ window._invFilter='review'; window.__invPage=1; render('invest'); });
   document.querySelectorAll('[data-ei]').forEach(b=>b.onclick=()=>openInvModal(inv.find(i=>i.id===b.dataset.ei)));
   document.querySelectorAll('[data-si]').forEach(b=>b.onclick=()=>{ const x=inv.find(i=>i.id===b.dataset.si); x.status= x.status==='审查中'?'已签认':x.status==='已签认'?'已支付':'审查中'; save(K.invest,inv); toast('状态已更新为 '+x.status); render('invest'); });
+  bindPager('invest', (p)=>{ window.__invPage=p; render('invest'); });
   document.getElementById('editContractTotal')?.addEventListener('click',()=>{
     const cur=getContractTotal();
     showModal(`<button class="close" onclick="closeModal()">×</button><h3>修改合同总价</h3>
@@ -2867,7 +2981,16 @@ function renderLogPage(type){
   const isLinked=(id)=>!!id && projList().some(p=>p.id===id);
   h+=`<div class="section-title" style="font-size:15px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>${isDay?'监理日志':'监理月报'}归档（${logs.length}）</div>`;
   if(logs.length===0) h+=`<div class="empty-hint">暂无生成的${isDay?'监理日志':'监理月报'}</div>`;
-  else h+=`<div class="grid grid-2">`+logs.map(l=>`<div class="proj"><div style="display:flex;justify-content:space-between"><h3 style="font-size:14px">${esc(l.type)} · ${l.date}</h3><div style="display:flex;gap:6px"><button class="btn sm ghost" onclick="viewLog('${l.id}')">查看</button><button class="btn sm" onclick="editLog('${l.id}')">编辑</button>${PERM[ROLE].addProj?`<button class="btn sm ghost danger" onclick="delLog('${l.id}')">删</button>`:''}</div></div>${!isLinked(l.proj)?`<div style="margin-top:8px;display:flex;gap:8px;align-items:center"><span style="color:var(--sub);font-size:12.5px">未关联项目：</span>${projOptions('inlineLinkLogProj_'+l.id)}</div>`:`<div class="pcode">${esc(projName(l.proj))}</div>`}</div>`).join('')+`</div>`;
+  else {
+    const pageSize = 20;
+    const total = logs.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__logPage||1), totalPages);
+    window.__logPage = curPage;
+    const pageRows = logs.slice((curPage-1)*pageSize, curPage*pageSize);
+    h+=`<div class="grid grid-2">`+pageRows.map(l=>`<div class="proj"><div style="display:flex;justify-content:space-between"><h3 style="font-size:14px">${esc(l.type)} · ${l.date}</h3><div style="display:flex;gap:6px"><button class="btn sm ghost" onclick="viewLog('${l.id}')">查看</button><button class="btn sm" onclick="editLog('${l.id}')">编辑</button>${PERM[ROLE].addProj?`<button class="btn sm ghost danger" onclick="delLog('${l.id}')">删</button>`:''}</div></div>${!isLinked(l.proj)?`<div style="margin-top:8px;display:flex;gap:8px;align-items:center"><span style="color:var(--sub);font-size:12.5px">未关联项目：</span>${projOptions('inlineLinkLogProj_'+l.id)}</div>`:`<div class="pcode">${esc(projName(l.proj))}</div>`}</div>`).join('')+`</div>`;
+    h+=renderPager(total, curPage, pageSize, 'log');
+  }
   // 给「未关联项目」选择框绑定自动保存
   if(typeof window.__bindLogAutoLink==='undefined'){
     document.body.addEventListener('change',e=>{
@@ -3031,6 +3154,7 @@ function bindLogPage(type){
   document.getElementById('exportAll')?.addEventListener('click',exportAll);
   document.getElementById('importAll')?.addEventListener('click',importAll);
   document.getElementById('clearDemo')?.addEventListener('click',clearDemo);
+  bindPager('log', (p)=>{ window.__logPage=p; render('log'); });
 }
 function bindLog(){ bindLogPage('day'); }
 function bindMonthly(){ bindMonthlyReport(); }
@@ -3278,12 +3402,19 @@ function planHTML(){
   if(migrated) save(K.plan,list);
   if(list.length===0) h+=`<div class="empty-hint">暂无规划/细则记录</div>`;
   else {
+    const pageSize = 20;
+    const total = list.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__planPage||1), totalPages);
+    window.__planPage = curPage;
+    const pageRows = list.slice((curPage-1)*pageSize, curPage*pageSize);
     h+=`<div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>分类</th><th>名称</th><th>项目</th><th>编制人</th><th>日期</th><th>状态</th><th style="width:120px">操作</th></tr></thead><tbody>`;
-    list.forEach(p=>{
+    pageRows.forEach(p=>{
       const tpl=getPlanTemplates().find(x=>x.key===p.tpl)||{name:p.tpl||'—'};
       h+=`<tr><td>${esc(tpl.name)}</td><td>${esc(p.name||tpl.name)}</td><td>${esc(projName(p.proj))}</td><td>${esc(p.author||'—')}</td><td>${esc(p.date||'—')}</td><td>${planStatusPill(p.status)}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" onclick="editPlan('${p.id}')">编辑</button>${PERM[ROLE].addProj?`<button class="btn sm danger" onclick="delPlan('${p.id}')">删</button>`:''}</div></td></tr>`;
     });
     h+=`</tbody></table></div>`;
+    h+=renderPager(total, curPage, pageSize, 'plan');
   }
   return h;
 }
@@ -3302,6 +3433,7 @@ function bindPlan(){
     const l=load(K.plan,[]); if(!l.length){toast('暂无记录');return;}
     download(l.map(p=>{const t=getPlanTemplates().find(x=>x.key===p.tpl);return (p.name||t?t.name:p.tpl)+'｜'+projName(p.proj)+'｜'+(p.author||'—')+'｜'+(p.date||'—')+'｜'+p.status;}).join('\n'),`监理规划细则清单_${todayDisplay()}.txt`);
   });
+  bindPager('plan', (p)=>{ window.__planPage=p; render('plan'); });
 }
 function editPlan(id){
   const list=load(K.plan,[]); const p=list.find(x=>x.id===id); if(!p) return;
@@ -3413,24 +3545,34 @@ function machineHTML(){
   h += `<div class="btn-row"><button class="btn" id="addMachine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新增机械设备</button></div>`;
   h += `<div class="filters" style="margin:10px 0;"><input id="machineSearch" value="${esc(window.__machineSearch||'')}" placeholder="搜索名称/合格证" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);min-width:240px;"></div>`;
   if(filtered.length === 0) h += `<div class="empty-hint">暂无机械设备记录</div>`;
-  h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>进场日期</th><th>名称</th><th>合格证</th><th>验收结论</th><th>操作</th></tr></thead><tbody>`;
-  filtered.forEach(x => {
-    h += `<tr>
-      <td>${esc(x.date)}</td>
-      <td>${esc(x.name||'')}</td>
-      <td>${esc(x.cert||'')}</td>
-      <td style="color:${x.result==='合格'?'var(--green)':x.result==='整改后合格'?'var(--amber)':'var(--red)'};font-weight:600;">${esc(x.result||'')}</td>
-      <td><button class="btn sm" data-editmachine="${x.id}">编辑</button> <button class="btn sm secondary" data-delmachine="${x.id}">删除</button></td>
-    </tr>`;
-  });
-  h += `</tbody></table></div>`;
+  else {
+    const pageSize = 20;
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__machinePage||1), totalPages);
+    window.__machinePage = curPage;
+    const pageRows = filtered.slice((curPage-1)*pageSize, curPage*pageSize);
+    h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>进场日期</th><th>名称</th><th>合格证</th><th>验收结论</th><th>操作</th></tr></thead><tbody>`;
+    pageRows.forEach(x => {
+      h += `<tr>
+        <td>${esc(x.date)}</td>
+        <td>${esc(x.name||'')}</td>
+        <td>${esc(x.cert||'')}</td>
+        <td style="color:${x.result==='合格'?'var(--green)':x.result==='整改后合格'?'var(--amber)':'var(--red)'};font-weight:600;">${esc(x.result||'')}</td>
+        <td><button class="btn sm" data-editmachine="${x.id}">编辑</button> <button class="btn sm secondary" data-delmachine="${x.id}">删除</button></td>
+      </tr>`;
+    });
+    h += `</tbody></table></div>`;
+    h += renderPager(total, curPage, pageSize, 'machine');
+  }
   return h;
 }
 function bindMachine(){
   document.getElementById('addMachine')?.addEventListener('click',()=>{ showModal(machineFormHTML()); });
-  document.getElementById('machineSearch')?.addEventListener('input',e=>{ window.__machineSearch=e.target.value; render('machine'); });
+  document.getElementById('machineSearch')?.addEventListener('input',e=>{ window.__machineSearch=e.target.value; window.__machinePage=1; render('machine'); });
   document.querySelectorAll('[data-editmachine]').forEach(b=>b.onclick=()=>editMachine(b.dataset.editmachine));
   document.querySelectorAll('[data-delmachine]').forEach(b=>b.onclick=()=>delMachine(b.dataset.delmachine));
+  bindPager('machine', (p)=>{ window.__machinePage=p; render('machine'); });
 }
 function machineFormHTML(x){
   const isEdit = !!x;
@@ -3476,25 +3618,35 @@ function specialHTML(){
     <input id="specialSearch" value="${esc(window.__specialSearch||'')}" placeholder="搜索姓名" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);min-width:200px;">
   </div>`;
   if(filtered.length === 0) h += `<div class="empty-hint">暂无特种作业人员记录</div>`;
-  h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>人员姓名</th><th>进场日期</th><th>特种分类</th><th>证书编号</th><th>操作</th></tr></thead><tbody>`;
-  filtered.forEach(x => {
-    h += `<tr>
-      <td>${esc(x.name||'')}</td>
-      <td>${esc(x.date)}</td>
-      <td>${esc(x.category||'')}</td>
-      <td>${esc(x.certNo||'')}</td>
-      <td><button class="btn sm" data-editspecial="${x.id}">编辑</button> <button class="btn sm secondary" data-delspecial="${x.id}">删除</button></td>
-    </tr>`;
-  });
-  h += `</tbody></table></div>`;
+  else {
+    const pageSize = 20;
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__specialPage||1), totalPages);
+    window.__specialPage = curPage;
+    const pageRows = filtered.slice((curPage-1)*pageSize, curPage*pageSize);
+    h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>人员姓名</th><th>进场日期</th><th>特种分类</th><th>证书编号</th><th>操作</th></tr></thead><tbody>`;
+    pageRows.forEach(x => {
+      h += `<tr>
+        <td>${esc(x.name||'')}</td>
+        <td>${esc(x.date)}</td>
+        <td>${esc(x.category||'')}</td>
+        <td>${esc(x.certNo||'')}</td>
+        <td><button class="btn sm" data-editspecial="${x.id}">编辑</button> <button class="btn sm secondary" data-delspecial="${x.id}">删除</button></td>
+      </tr>`;
+    });
+    h += `</tbody></table></div>`;
+    h += renderPager(total, curPage, pageSize, 'special');
+  }
   return h;
 }
 function bindSpecial(){
   document.getElementById('addSpecial')?.addEventListener('click',()=>{ showModal(specialFormHTML()); });
-  document.getElementById('specialTypeFilter')?.addEventListener('change',e=>{ window.__specialType=e.target.value; render('special'); });
-  document.getElementById('specialSearch')?.addEventListener('input',e=>{ window.__specialSearch=e.target.value; render('special'); });
+  document.getElementById('specialTypeFilter')?.addEventListener('change',e=>{ window.__specialType=e.target.value; window.__specialPage=1; render('special'); });
+  document.getElementById('specialSearch')?.addEventListener('input',e=>{ window.__specialSearch=e.target.value; window.__specialPage=1; render('special'); });
   document.querySelectorAll('[data-editspecial]').forEach(b=>b.onclick=()=>editSpecial(b.dataset.editspecial));
   document.querySelectorAll('[data-delspecial]').forEach(b=>b.onclick=()=>delSpecial(b.dataset.delspecial));
+  bindPager('special', (p)=>{ window.__specialPage=p; render('special'); });
 }
 function specialFormHTML(x){
   const isEdit = !!x;
@@ -3532,23 +3684,33 @@ function schemeHTML(){
   h += `<div class="btn-row"><button class="btn" id="addScheme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>新增方案审查</button></div>`;
   h += `<div class="filters" style="margin:10px 0;"><input id="schemeSearch" value="${esc(window.__schemeSearch||'')}" placeholder="搜索方案名称/结论" style="padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel-1);color:var(--ink-1);min-width:240px;"></div>`;
   if(filtered.length === 0) h += `<div class="empty-hint">暂无方案审查记录</div>`;
-  h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>报审日期</th><th>方案名称</th><th>审核结论</th><th>操作</th></tr></thead><tbody>`;
-  filtered.forEach(x => {
-    h += `<tr>
-      <td>${esc(x.date)}</td>
-      <td>${esc(x.name||'')}</td>
-      <td style="color:${x.result==='通过'?'var(--green)':x.result==='修改后通过'?'var(--amber)':'var(--red)'};font-weight:600;">${esc(x.result||'')}</td>
-      <td><button class="btn sm" data-editscheme="${x.id}">编辑</button> <button class="btn sm secondary" data-delscheme="${x.id}">删除</button></td>
-    </tr>`;
-  });
-  h += `</tbody></table></div>`;
+  else {
+    const pageSize = 20;
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__schemePage||1), totalPages);
+    window.__schemePage = curPage;
+    const pageRows = filtered.slice((curPage-1)*pageSize, curPage*pageSize);
+    h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>报审日期</th><th>方案名称</th><th>审核结论</th><th>操作</th></tr></thead><tbody>`;
+    pageRows.forEach(x => {
+      h += `<tr>
+        <td>${esc(x.date)}</td>
+        <td>${esc(x.name||'')}</td>
+        <td style="color:${x.result==='通过'?'var(--green)':x.result==='修改后通过'?'var(--amber)':'var(--red)'};font-weight:600;">${esc(x.result||'')}</td>
+        <td><button class="btn sm" data-editscheme="${x.id}">编辑</button> <button class="btn sm secondary" data-delscheme="${x.id}">删除</button></td>
+      </tr>`;
+    });
+    h += `</tbody></table></div>`;
+    h += renderPager(total, curPage, pageSize, 'scheme');
+  }
   return h;
 }
 function bindScheme(){
   document.getElementById('addScheme')?.addEventListener('click',()=>{ showModal(schemeFormHTML()); });
-  document.getElementById('schemeSearch')?.addEventListener('input',e=>{ window.__schemeSearch=e.target.value; render('scheme'); });
+  document.getElementById('schemeSearch')?.addEventListener('input',e=>{ window.__schemeSearch=e.target.value; window.__schemePage=1; render('scheme'); });
   document.querySelectorAll('[data-editscheme]').forEach(b=>b.onclick=()=>editScheme(b.dataset.editscheme));
   document.querySelectorAll('[data-delscheme]').forEach(b=>b.onclick=()=>delScheme(b.dataset.delscheme));
+  bindPager('scheme', (p)=>{ window.__schemePage=p; render('scheme'); });
 }
 function schemeFormHTML(x){
   const isEdit = !!x;
@@ -3964,24 +4126,34 @@ function meetingHTML(){
     return hay.includes(q);
   }) : list;
   if(displayList.length===0) h+=`<div class="empty-hint">${q?'未搜索到匹配清单':'暂无例会清单'}</div>`;
-  else h+=`<div class="grid grid-2">`+displayList.map(m=>{
-    const fcount=(m.fields||[]).length;
-    const timeF=(m.fields||[]).find(f=>f.key==='会议时间');
-    const docBadge = m.doc? `<span class="pill" style="background:var(--accent-soft);color:var(--accent)">📎 ${esc(m.doc.name)}</span>`:'';
-    return `<div class="proj">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><h3 style="font-size:15px">${esc(m.title||'未命名清单')}</h3>${docBadge}</div>
-      <div class="pcode">${timeF?('时间 '+esc(timeF.value)+' · '):''}字段 ${fcount} 项${m.createdAt?' · '+esc(m.createdAt):''}</div>
-      <div class="btn-row" style="margin-top:8px">
-        <button class="btn sm" onclick="viewMeeting('${m.id}')">查看清单</button>
-        ${PERM[ROLE].addProj?`<button class="btn sm ghost danger" onclick="delMeeting('${m.id}')">删除</button>`:''}
-      </div></div>`;
-  }).join('')+`</div>`;
+  else {
+    const pageSize = 20;
+    const total = displayList.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__meetingPage||1), totalPages);
+    window.__meetingPage = curPage;
+    const pageRows = displayList.slice((curPage-1)*pageSize, curPage*pageSize);
+    h+=`<div class="grid grid-2">`+pageRows.map(m=>{
+      const fcount=(m.fields||[]).length;
+      const timeF=(m.fields||[]).find(f=>f.key==='会议时间');
+      const docBadge = m.doc? `<span class="pill" style="background:var(--accent-soft);color:var(--accent)">📎 ${esc(m.doc.name)}</span>`:'';
+      return `<div class="proj">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><h3 style="font-size:15px">${esc(m.title||'未命名清单')}</h3>${docBadge}</div>
+        <div class="pcode">${timeF?('时间 '+esc(timeF.value)+' · '):''}字段 ${fcount} 项${m.createdAt?' · '+esc(m.createdAt):''}</div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn sm" onclick="viewMeeting('${m.id}')">查看清单</button>
+          ${PERM[ROLE].addProj?`<button class="btn sm ghost danger" onclick="delMeeting('${m.id}')">删除</button>`:''}
+        </div></div>`;
+    }).join('')+`</div>`;
+    h+=renderPager(total, curPage, pageSize, 'meeting');
+  }
   return h;
 }
 function bindMeeting(){
   document.getElementById('addMeeting')?.addEventListener('click', ()=>openMeetingListModal());
   document.getElementById('expMeeting')?.addEventListener('click',()=>{ const l=load(K.meeting,[]); if(!l.length){toast('暂无清单');return;} download(l.map(m=>meetingText(m)).join('\n\n'+'—'.repeat(20)+'\n\n'),`监理例会清单_${todayDisplay()}.txt`); });
   document.getElementById('uploadMeeting')?.addEventListener('click', uploadMeeting);
+  bindPager('meeting', (p)=>{ window.__meetingPage=p; render('meeting'); });
   if(window.__focusId){ const f=load(K.meeting,[]).find(x=>x.id===window.__focusId); if(f){ viewMeeting(f.id); } window.__focusId=null; }
 }
 function renderMeetingList(){ window.__mSearch = val('mSearch') || ''; render('meeting'); }
@@ -4307,8 +4479,14 @@ function letterHTML(){
   h+=kwBar('letter','过滤：编号 / 类型 / 事由 / 摘要');
   if(list.length===0) h+=`<div class="empty-hint">暂无函件登记</div>`;
   else {
+    const pageSize = 20;
+    const total = list.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__letterPage||1), totalPages);
+    window.__letterPage = curPage;
+    const pageRows = list.slice((curPage-1)*pageSize, curPage*pageSize);
     h+=`<div class="table-wrap"><table class="tbl"><thead><tr><th>编号</th><th>类型</th><th>事由</th><th>收发</th><th>日期</th><th>状态</th><th>操作</th></tr></thead><tbody>`;
-    list.forEach(l=>{
+    pageRows.forEach(l=>{
       const st = l.type==='工作联系单' ? '不需要回复' : (l.status||'未回复');
       const color = (st==='已回复'||st==='不需要回复')?'var(--green)':(st==='未回复'?'var(--red)':'var(--amber)');
       h+=`<tr><td>${esc(l.no||'—')}</td><td>${esc(l.type)}</td><td>${esc(l.subject)}</td><td>${esc(l.dir)}</td><td>${esc(l.date)}</td>
@@ -4316,6 +4494,7 @@ function letterHTML(){
         <td><button class="btn sm" onclick="viewLetter('${l.id}')">查看</button> ${PERM[ROLE].addProj?`<button class="btn sm ghost danger" onclick="delLetter('${l.id}')">删</button>`:''}</td></tr>`;
     });
     h+=`</tbody></table></div>`;
+    h+=renderPager(total, curPage, pageSize, 'letter');
   }
   return h;
 }
@@ -4333,6 +4512,7 @@ function bindLetter(){
       <button class="btn" onclick="saveLetter()">登记</button>`);
   });
   document.getElementById('expLetter')?.addEventListener('click',()=>{ const l=load(K.letter,[]); if(!l.length){toast('暂无数据');return;} download('来往函件台账\n'+l.map(x=>(x.no||'')+'｜'+x.type+'｜'+x.subject+'｜'+x.dir+'｜'+x.date+'｜'+(x.type==='工作联系单'?'不需要回复':(x.status||'未回复'))).join('\n'),`函件台账_${todayDisplay()}.txt`); });
+  bindPager('letter', (p)=>{ window.__letterPage=p; render('letter'); });
   if(window.__focusId){ const f=load(K.letter,[]).find(x=>x.id===window.__focusId); if(f){ viewLetter(f.id); } window.__focusId=null; }
 }
 function saveLetter(){
@@ -4365,12 +4545,19 @@ function contactHTML(){
   h+=kwBar('contact','过滤：编号 / 接收单位 / 事由');
   if(list.length===0) h+=`<div class="empty-hint">暂无工作联系单</div>`;
   else {
+    const pageSize = 20;
+    const total = list.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__contactPage||1), totalPages);
+    window.__contactPage = curPage;
+    const pageRows = list.slice((curPage-1)*pageSize, curPage*pageSize);
     h+=`<div class="table-wrap"><table class="tbl"><thead><tr><th>编号</th><th>致（接收单位）</th><th>事由</th><th>日期</th><th>操作</th></tr></thead><tbody>`;
-    list.forEach(l=>{
+    pageRows.forEach(l=>{
       h+=`<tr><td>${esc(l.no||'—')}</td><td>${esc(l.toUnit||'—')}</td><td>${esc(l.subject)}</td><td>${esc(l.date)}</td>
         <td><button class="btn sm" onclick="viewContact('${l.id}')">查看</button> <button class="btn sm ghost" onclick="editContact('${l.id}')">编辑</button> ${PERM[ROLE].addProj?`<button class="btn sm ghost danger" onclick="delContact('${l.id}')">删</button>`:''}</td></tr>`;
     });
     h+=`</tbody></table></div>`;
+    h+=renderPager(total, curPage, pageSize, 'contact');
   }
   return h;
 }
@@ -4399,6 +4586,7 @@ function contactForm(l){
 function bindContact(){
   document.getElementById('addContact')?.addEventListener('click',()=>showModal(contactForm(null)));
   document.getElementById('expContact')?.addEventListener('click',()=>{ const l=load(K.letter,[]).filter(x=>x.type==='工作联系单'); if(!l.length){toast('暂无数据');return;} download('工作联系单台账\n'+l.map(x=>[(x.no||''), (x.toUnit||''), x.subject, x.date, x.status].join('｜')).join('\n'),`联系单台账_${todayDisplay()}.txt`); });
+  bindPager('contact', (p)=>{ window.__contactPage=p; render('contact'); });
 }
 function editContact(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) return; showModal(contactForm(l)); }
 function saveContact(id){
@@ -4514,8 +4702,14 @@ function noticeHTML(){
   h+=kwBar('notice','过滤：编号 / 施工方 / 事由 / 规范依据');
   if(list.length===0) h+=`<div class="empty-hint">暂无通知单记录</div>`;
   else {
+    const pageSize = 20;
+    const total = list.length;
+    const totalPages = Math.max(1, Math.ceil(total/pageSize));
+    const curPage = Math.min(Math.max(1, window.__noticePage||1), totalPages);
+    window.__noticePage = curPage;
+    const pageRows = list.slice((curPage-1)*pageSize, curPage*pageSize);
     h+=`<div class="table-wrap"><table class="tbl"><thead><tr><th>编号</th><th>致（施工方）</th><th>事由</th><th>日期</th><th>整改期限</th><th>生成</th><th>操作</th></tr></thead><tbody>`;
-    list.forEach(n=>{
+    pageRows.forEach(n=>{
       h+=`<tr><td>${esc(n.no||'—')}</td><td>${esc(n.construction)}</td><td>${esc(n.subject)}</td><td>${esc(n.date)}</td><td>${esc(n.deadline||'—')}</td>
         <td>${n.docx?`<span style="color:var(--green);font-weight:600">已生成</span>`:`<span style="color:var(--sub)">未生成</span>`}</td>
         <td><button class="btn sm" onclick="viewNotice('${n.id}')">查看</button>
@@ -4523,6 +4717,7 @@ function noticeHTML(){
         ${PERM[ROLE].addProj?`<button class="btn sm ghost danger" onclick="delNotice('${n.id}')">删</button>`:''}</td></tr>`;
     });
     h+=`</tbody></table></div>`;
+    h+=renderPager(total, curPage, pageSize, 'notice');
   }
   return h;
 }
@@ -4530,6 +4725,7 @@ function bindNotice(){
   document.getElementById('addNotice')?.addEventListener('click',()=>openNotice(null));
   document.getElementById('tplNotice')?.addEventListener('click',openNoticeTemplate);
   document.getElementById('cfgNotice')?.addEventListener('click',openNoticeCfg);
+  bindPager('notice', (p)=>{ window.__noticePage=p; render('notice'); });
 }
 function openNotice(id){
   const list=load(K.notice,[]); const n=id?list.find(x=>x.id===id):null;

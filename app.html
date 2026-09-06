@@ -1283,6 +1283,7 @@ if(!PERM[ROLE]) ROLE = "操作员";
 
 /* ============ 预置示例数据（铁律6） ============ */
 function seed(){
+  return; // 打包版本：不加载任何示例数据，用户首次安装后为空白，需自行录入或从云同步获取
   if(load(K.cleared,false)) return;
   // 桌面版：仅当对应数据文件尚不存在时给一次性初始示例，绝不覆盖已有数据
   if(IS_DESKTOP){
@@ -1305,19 +1306,19 @@ function seed(){
   const p0 = load(K.proj,[])[0].id;
   save(K.insp, [
     {id:uid(), proj:p0, date:"2026-05-15", type:"质量", spot:"基础底板", finder:"李专业监理",
-     problem:"局部混凝土振捣不密实", level:"一般", status:"已闭环",
+     problem:"局部混凝土振捣不密实", level:"一般", status:"已处理",
      photos:[], resp:"施工班组", due:"2026-05-18", closeNote:"已返工处理"},
     {id:uid(), proj:p0, date:"2026-05-22", type:"安全", spot:"基坑边坡", finder:"王监理员",
-     problem:"基坑周边防护栏杆缺失", level:"严重", status:"已闭环",
+     problem:"基坑周边防护栏杆缺失", level:"严重", status:"已处理",
      photos:[], resp:"架子工班组", due:"2026-05-25", closeNote:"已增设防护"},
     {id:uid(), proj:p0, date:"2026-06-10", type:"质量", spot:"一层柱筋", finder:"李专业监理",
-     problem:"柱筋绑扎间距不均", level:"一般", status:"已闭环",
+     problem:"柱筋绑扎间距不均", level:"一般", status:"已处理",
      photos:[], resp:"施工班组", due:"2026-06-14", closeNote:"已整改复验"},
     {id:uid(), proj:p0, date:"2026-06-18", type:"质量", spot:"模板支撑", finder:"张总监",
-     problem:"高大模板支撑体系未按方案搭设", level:"重大", status:"已闭环",
+     problem:"高大模板支撑体系未按方案搭设", level:"重大", status:"已处理",
      photos:[], resp:"技术负责人", due:"2026-06-20", closeNote:"已停工整改并复验"},
     {id:uid(), proj:p0, date:"2026-07-08", type:"安全", spot:"临时用电", finder:"王监理员",
-     problem:"配电箱未设防雨罩", level:"一般", status:"已闭环",
+     problem:"配电箱未设防雨罩", level:"一般", status:"已处理",
      photos:[], resp:"电工班组", due:"2026-07-12", closeNote:"已加装"},
     {id:uid(), proj:p0, date:"2026-07-20", type:"质量", spot:"二层梁板", finder:"李专业监理",
      problem:"梁底保护层厚度不足", level:"严重", status:"整改中",
@@ -1535,9 +1536,9 @@ function formatWeather(d){
 function projName(id){ const p=load(K.proj,[]).find(x=>x.id===id); return p?p.name:'(未关联)'; }
 function projList(){ return load(K.proj,[]); }
 function statusBadge(s){ const m={"在监":'b-monitor',"竣工":'b-done',"暂停":'b-pause'}; return `<span class="badge ${m[s]||''}">${s}</span>`; }
-function inspBadge(s){ const m={"待整改":'red',"整改中":'amber',"已闭环":'green'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
+function inspBadge(s){ const m={"待整改":'red',"整改中":'amber',"已处理":'green'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
 function prioPill(p){ const m={"P0":'red',"P1":'amber',"P2":''}; return `<span class="pill ${m[p]||''}">${p}</span>`; }
-function stPill(s){ const m={"已送检":'amber',"报告合格":'green',"报告不合格":'red fail',"验收合格":'green',"验收不合格":'red fail',"已签认":'green',"审查中":'amber',"已闭环":'green',"监控中":'amber',"待整改":'red fail',"已支付":'green',"通过":'green',"整改后通过":'amber',"不通过":'red fail'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
+function stPill(s){ const m={"已送检":'amber',"报告合格":'green',"报告不合格":'red fail',"验收合格":'green',"验收不合格":'red fail',"已签认":'green',"审查中":'amber',"已处理":'green',"监控中":'amber',"待整改":'red fail',"已支付":'green',"通过":'green',"整改后通过":'amber',"不通过":'red fail'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
 function projSelect(sel){ const pl=projList(); if(!pl.length) return `<select id="${sel}"><option value="">暂无项目，请先添加</option></select>`; return `<select id="${sel}"><option value="">请选择项目</option>${pl.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>`; }
 function projOptions(sel, cur){ return `<select id="${sel}">${projList().map(p=>`<option value="${p.id}" ${cur===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`; }
 function getContractTotal(){ return Number(load(K.contractTotal, 186000000)); }
@@ -1618,7 +1619,7 @@ function buildToday(){
   const t = todayDisplay();
   const go = loadTodoGo();
   let items=[];
-  load(K.insp,[]).forEach(x=>{ if(x.status==="已闭环")return; const od=x.due<t;
+  load(K.insp,[]).forEach(x=>{ if(x.status==="已处理")return; const od=x.due<t;
     items.push({key:"insp:"+x.id, tag:"整改",over:od,title:x.problem,meta:`${projName(x.proj)} · ${x.spot} · 期限 ${x.due} · ${x.level}`,act:()=>gotoFocus('inspect', x.id)}); });
   load(K.side,[]).forEach(x=>{ if(x.abnormal==="无"||!x.abnormal)return;
     items.push({key:"side:"+x.id, tag:"旁站异常",over:false,title:x.spot+" 旁站异常",meta:`${projName(x.proj)} · ${x.date} · ${x.abnormal}`,act:()=>gotoFocus('side', x.id)}); });
@@ -1770,7 +1771,7 @@ function render(page){
 function quickStatsHTML(){
   const t=todayDisplay();
   const cards=[
-    ["未闭环问题", load(K.insp,[]).filter(x=>x.status!=="已闭环").length, 'var(--amber)'],
+    ["未处理问题", load(K.insp,[]).filter(x=>x.status!=="已处理").length, 'var(--amber)'],
     ["旁站记录", load(K.side,[]).length, 'var(--purple)'],
     ["见证取样", load(K.sample,[]).filter(x=>x.status!=="报告合格").length, 'var(--blue)'],
     ["投资签认", "¥"+(load(K.invest,[]).filter(x=>x.status==="已签认"||x.status==="已支付").reduce((s,x)=>s+Number(x.amount||0),0)/10000).toFixed(1)+"万", 'var(--green)'],
@@ -1798,7 +1799,7 @@ function overviewHTML(){
   const machine = load(K.machine,[]); const special = load(K.special,[]); const scheme = load(K.scheme,[]);
   const meeting = load(K.meeting,[]); const letter = load(K.letter,[]); const notice = load(K.notice,[]);
 
-  const inspOpen = insp.filter(x=>x.status!=="已闭环").length;
+  const inspOpen = insp.filter(x=>x.status!=="已处理").length;
   const inspDanger = insp.filter(x=>x.level==="严重"||x.level==="重大").length;
   const sampleWait = sample.filter(x=>x.status!=="报告合格").length;
   const noticeOpen = notice.filter(x=>!x.docx).length;
@@ -1820,7 +1821,7 @@ function overviewHTML(){
   // 待处理问题列表（复用 buildToday 逻辑）
   const st = loadTodoState(); const go = loadTodoGo();
   let pendingItems=[];
-  insp.forEach(x=>{ if(x.status==="已闭环")return; const od=x.due<todayDisplay();
+  insp.forEach(x=>{ if(x.status==="已处理")return; const od=x.due<todayDisplay();
     pendingItems.push({key:"insp:"+x.id, tag:"整改",over:od,title:x.problem,meta:`${projName(x.proj)} · ${x.spot} · 期限 ${x.due} · ${x.level}`,page:"inspect",rid:x.id,color:"#ff8a5c"}); });
   side.forEach(x=>{ if(x.abnormal==="无"||!x.abnormal)return;
     pendingItems.push({key:"side:"+x.id, tag:"旁站异常",over:false,title:x.spot+" 旁站异常",meta:`${projName(x.proj)} · ${x.date} · ${x.abnormal}`,page:"side",rid:x.id,color:"#7c5cff"}); });
@@ -2034,9 +2035,9 @@ function inspectHTML(){
       <div style="margin:8px 0;font-size:13.5px">${esc(x.problem)}</div>
       <div class="stat-row"><span>等级 <b style="color:${x.level==='严重'?'var(--red)':'var(--amber)'}">${x.level}</b></span><span>责任 <b>${esc(x.resp)}</b></span><span>期限 <b>${x.due}</b></span></div>
       ${x.photos&&x.photos.length?`<div class="photo-grid">${x.photos.map(p=>`<img src="${p}" onclick="zoom('${p}')">`).join('')}</div>`:`<div class="pcode" style="margin-top:8px">无现场照片</div>`}
-      ${x.status==='已闭环'?`<div class="pcode" style="margin-top:8px;color:var(--green)">闭环：${esc(x.closeNote||'已复核')}</div>`:''}
+      ${x.status==='已处理'?`<div class="pcode" style="margin-top:8px;color:var(--green)">已处理：${esc(x.closeNote||'已复核')}</div>`:''}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        ${PERM[ROLE].closeIssue&&x.status!=='已闭环'?`<button class="btn sm" data-close="${x.id}">整改闭环</button>`:''}
+        ${PERM[ROLE].closeIssue&&x.status!=='已处理'?`<button class="btn sm" data-close="${x.id}">标记已处理</button>`:''}
         <button class="btn sm ghost" data-view="${x.id}">详情</button>
         ${PERM[ROLE].inspect?`<button class="btn sm ghost" data-edit="${x.id}">编辑</button>`:''}
         ${PERM[ROLE].inspect?`<button class="btn sm danger" onclick="deleteItem('${K.insp}','${x.id}')">删</button>`:''}
@@ -2060,7 +2061,7 @@ function openInspModal(x, pid, viewOnly){
     <div class="field"><label>检查部位</label><input id="i_spot" value="${esc(x?.spot||'')}"></div>
     <div class="field"><label>问题描述</label><textarea id="i_prob">${esc(x?.problem||'')}</textarea>${viewOnly?'':aiOptBtn('i_prob','problem')}</div>
     <div class="field"><label>问题等级</label><select id="i_level">${['一般','严重'].map(s=>`<option ${x?.level===s?'selected':''}>${s}</option>`).join('')}</select></div>
-    <div class="field"><label>整改状态</label><select id="i_status"><option value="待整改" ${x?.status==='待整改'?'selected':''}>未整改</option><option value="整改中" ${x?.status==='整改中'?'selected':''}>整改中</option><option value="已闭环" ${x?.status==='已闭环'?'selected':''}>已整改</option></select></div>
+    <div class="field"><label>整改状态</label><select id="i_status"><option value="待整改" ${x?.status==='待整改'?'selected':''}>未整改</option><option value="整改中" ${x?.status==='整改中'?'selected':''}>整改中</option><option value="已处理" ${x?.status==='已处理'?'selected':''}>已处理</option></select></div>
     <div class="field"><label>巡查人</label><input id="i_finder" value="${esc(x?.finder||ROLE)}"></div>
     <div class="field"><label>整改责任方</label><input id="i_resp" value="${esc(x?.resp||'')}"></div>
     <div class="field"><label>整改期限</label><input id="i_due" type="date" value="${x?.due||todayDisplay()}"></div>
@@ -2079,12 +2080,12 @@ function saveInsp(id){
   save(K.insp,ins); closeModal(); toast('已保存'); render('inspect');
 }
 function openCloseModal(x){
-  showModal(`<button class="close" onclick="closeModal()">×</button><h3>整改闭环确认</h3>
+  showModal(`<button class="close" onclick="closeModal()">×</button><h3>标记已处理确认</h3>
     <div class="card" style="margin:0 0 12px"><div style="font-weight:600">${esc(x.type)} · ${esc(x.spot)}</div><div style="font-size:13px;color:var(--sub);margin-top:4px">${esc(x.problem)}</div></div>
     <div class="field"><label>闭环说明（复核结论）</label><textarea id="c_note">${esc(x.closeNote||'')}</textarea></div>
     <button class="btn" style="width:100%" onclick="doClose('${x.id}')">确认闭环</button>`);
 }
-function doClose(id){ const ins=load(K.insp,[]); const x=ins.find(i=>i.id===id); x.status="已闭环"; x.closeNote=val('c_note')||"已整改复核合格"; save(K.insp,ins); closeModal(); toast('问题已闭环'); render('inspect'); }
+function doClose(id){ const ins=load(K.insp,[]); const x=ins.find(i=>i.id===id); x.status="已处理"; x.closeNote=val('c_note')||"已整改复核合格"; save(K.insp,ins); closeModal(); toast('问题已处理'); render('inspect'); }
 function zoom(src){ showModal(`<button class="close" onclick="closeModal()">×</button><img src="${src}" style="width:100%;border-radius:10px">`); }
 
 /* ---- 旁站监理（质量监理子技能） ---- */
@@ -2125,12 +2126,12 @@ function sideHTML(){
       <div class="kv"><span>类别：<b>${esc(catTag)}</b></span><span>时间：<b>${esc(x.start||'')}-${esc(x.end||'')}</b></span><span>见证：<b>${esc(x.witnesser||'')}</b></span></div>
       <div style="font-size:13.5px;margin-top:8px">${esc(x.situation||'')}</div>
       ${ab?`<div class="redline" style="margin-top:8px"><b>异常：</b>${esc(x.abnormal)}</div>`:''}
-      <div style="margin-top:10px;display:flex;gap:10px"><button class="btn sm ghost" data-es="${x.id}">编辑</button><button class="btn sm danger" data-delside="${x.id}">删</button></div>
+      <div style="margin-top:10px;display:flex;gap:10px"><button class="btn sm ghost" data-es="${x.id}">编辑</button><button class="btn sm danger" data-delside="${x.id}">删</button>${ab && x.status!=='已处理'?`<button class="btn sm" data-sidehandled="${x.id}">已处理</button>`:''}${x.status==='已处理'?'<span class="pill green" style="margin-left:auto">已处理</span>':''}</div>
     </div>`;
   });
   return h+`</div>`;
 }
-function bindSide(){ const ss=load(K.side,[]); document.getElementById('addSide')?.addEventListener('click',()=>openSideModal(null)); document.getElementById('tplSide')?.addEventListener('click',openSideTemplate); document.querySelectorAll('[data-es]').forEach(b=>b.onclick=()=>openSideModal(ss.find(i=>i.id===b.dataset.es))); document.querySelectorAll('[data-delside]').forEach(b=>b.onclick=()=>{ const id=b.dataset.delside; const x=ss.find(i=>i.id===id); if(x){ confirmX(`确认删除旁站记录：${x.spot}？`, ()=>{ save(K.side, ss.filter(i=>i.id!==id)); toast('已删除'); render('side'); }); } }); renderSideCats(); if(window.__focusId){ const f=ss.find(i=>i.id===window.__focusId); if(f){ openSideModal(f); } window.__focusId=null; } }
+function bindSide(){ const ss=load(K.side,[]); document.getElementById('addSide')?.addEventListener('click',()=>openSideModal(null)); document.getElementById('tplSide')?.addEventListener('click',openSideTemplate); document.querySelectorAll('[data-es]').forEach(b=>b.onclick=()=>openSideModal(ss.find(i=>i.id===b.dataset.es))); document.querySelectorAll('[data-delside]').forEach(b=>b.onclick=()=>{ const id=b.dataset.delside; const x=ss.find(i=>i.id===id); if(x){ confirmX(`确认删除旁站记录：${x.spot}？`, ()=>{ save(K.side, ss.filter(i=>i.id!==id)); toast('已删除'); render('side'); }); } }); document.querySelectorAll('[data-sidehandled]').forEach(b=>b.onclick=()=>{ const id=b.dataset.sidehandled; const x=ss.find(i=>i.id===id); if(x){ x.status='已处理'; save(K.side,ss); toast('已标记为已处理'); render('side'); } }); renderSideCats(); if(window.__focusId){ const f=ss.find(i=>i.id===window.__focusId); if(f){ openSideModal(f); } window.__focusId=null; } }
 function renderSideCats(){ const big=window.__sideBig||'全部'; const sub=window.__sideSub||'全部'; const el=document.getElementById('sideCats'); if(!el) return;
   let chips = [`<button class="chip ${big==='全部'?'on':''}" onclick="setSideBig('全部')">全部</button>`];
   SIDE_BIG_CATS.forEach(b=>{ chips.push(`<button class="chip ${big===b?'on':''}" onclick="setSideBig('${b}')">${esc(b)}</button>`); });
@@ -2180,14 +2181,14 @@ function openSideModal(x){
     <div class="field half"><label>最低气温（℃）</label><input type="number" id="s_tempMin" value="${esc(parseWeather(x?.weather).min)}" placeholder="20"></div>
     <div class="field half"><label>最高气温（℃）</label><input type="number" id="s_tempMax" value="${esc(parseWeather(x?.weather).max)}" placeholder="30"></div>
     <div class="field"><label>施工单位</label>${contractorOpts(x?.contractor)}</div>
-    <div class="field half"><label>旁站类别（一级）</label><select id="s_big">${SIDE_BIG_CATS.map(c=>`<option ${c===(x?.big||'质量')?'selected':''}>${c}</option>`).join('')}</select></div>
-    <div class="field half"><label>旁站类别（二级）</label><select id="s_sub">${(SIDE_SUB_CATS[x?.big||'质量']||SIDE_SUB_CATS['质量']).map(c=>`<option ${c===(x?.sub||'其他')?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="field half"><label>旁站类型</label><select id="s_big">${SIDE_BIG_CATS.map(c=>`<option ${c===(x?.big||'质量')?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="field half"><label>旁站项目</label><select id="s_sub">${(SIDE_SUB_CATS[x?.big||'质量']||SIDE_SUB_CATS['质量']).map(c=>`<option ${c===(x?.sub||'其他')?'selected':''}>${c}</option>`).join('')}</select></div>
     <div class="field"><label>旁站的关键部位或关键工序</label><input id="s_spot" value="${esc(x?.spot||'')}" placeholder="如：三层剪力墙混凝土浇筑"></div>
     <div class="field half"><label>旁站开始时间</label><input type="time" id="s_start" value="${esc(x?.start||'')}" placeholder="08:30"></div>
     <div class="field half"><label>旁站结束时间</label><input type="time" id="s_end" value="${esc(x?.end||'')}" placeholder="14:00"></div>
     <div class="field"><label>施工情况</label><textarea id="s_sit" placeholder="施工过程、机械人员、见证检验情况等">${esc(x?.situation||'')}</textarea>${aiOptBtn('s_sit','side')}</div>
     <div class="field"><label>发现问题</label><textarea id="s_ab" placeholder="无异常填“无”">${esc(x?.abnormal||'无')}</textarea>${aiOptBtn('s_ab','abnormal')}</div>
-    <div class="field"><label>处理情况</label><textarea id="s_handle" placeholder="已现场整改/下发通知单/已闭环等">${esc(x?.handle||'')}</textarea>${aiOptBtn('s_handle','handle')}</div>
+    <div class="field"><label>处理情况</label><textarea id="s_handle" placeholder="已现场整改/下发通知单/已处理等">${esc(x?.handle||'')}</textarea>${aiOptBtn('s_handle','handle')}</div>
     <div class="field"><label>备注</label><textarea id="s_note" placeholder="其他需要说明的事项">${esc(x?.note||'')}</textarea></div>
     <div class="field"><label>旁站监理人员（签字）</label><input id="s_wit" value="${esc(x?.witnesser||ROLE)}"></div>
     <button class="btn" style="width:100%" onclick="saveSide(${e?`'${x.id}'`:'null'})">保存</button>`);
@@ -3067,16 +3068,16 @@ function genLog(type){
   const auto={
     proj:`${proj.name}`, date:t,
     progress:proj.progress, status:proj.status,
-    inspCount:day.length, inspOpen:day.filter(x=>x.status!=='已闭环').length,
+    inspCount:day.length, inspOpen:day.filter(x=>x.status!=='已处理').length,
     inspList:day.map(d=>`　　- [${d.type}]${d.spot}：${d.problem}（${d.level}，责任：${d.resp}）`).join('\n')||'　　· 无',
     sideCount:sides.filter(x=>x.date===t).length, sampleCount:samples.filter(x=>x.date===t).length, matCount:mats.filter(x=>x.date===t).length,
-    inspTotal:ins.length, inspClosed:ins.filter(x=>x.status==='已闭环').length,
+    inspTotal:ins.length, inspClosed:ins.filter(x=>x.status==='已处理').length,
     sideTotal:sides.length, sampleTotal:samples.length, matTotal:mats.length,
     safeCount:ins.filter(x=>x.type==='安全').length,
     investSum:'¥'+investSum.toLocaleString(),
     planPct:pr?pr.plan+'%':'—', actualPct:pr?pr.actual+'%':'—',
     lag:(pr&&pr.actual<pr.plan)?('（滞后'+(pr.plan-pr.actual)+'%）'):'',
-    openList:ins.filter(x=>x.status!=='已闭环').map(x=>'　　· '+x.spot+'：'+x.problem).join('\n')||'　　· 无重大未闭环问题。',
+    openList:ins.filter(x=>x.status!=='已处理').map(x=>'　　· '+x.spot+'：'+x.problem).join('\n')||'　　· 无重大未处理问题。',
     ym:`${new Date().getFullYear()}年${new Date().getMonth()+1}月`
   };
   // 选定模板

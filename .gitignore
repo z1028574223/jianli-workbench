@@ -35,3 +35,60 @@ Thumbs.db
 
 # iOS 独立仓库（单独管理，不纳入电脑端仓库）
 jianli_ios/
+
+# Flutter 误判项目（非电脑端实际代码）
+jianli_app/
+
+# 临时开发脚本与输出
+check-*.js
+gh_*.py
+gh_*.json
+make_*.py
+ssh-*.js
+test_p12.py
+gn_out.txt
+mr_out.txt
+uploaded.txt
+style.json
+build_v*.log
+
+# 临时参考图片
+ref_*.png
+tmp_ref*.png
+wf_ref_*.png
+
+# IPA 与打包中间产物
+ipa/
+ipa-artifact.zip
+*.ipa
+
+# 运行日志
+runlog/
+runlog*/
+runlog*.zip
+
+# UI 设计运行产物
+ui-design-runs/
+preview/
+wireframes.html
+
+# 服务器备份与私有证书
+server-backup/
+signing_private/
+
+# 设计文档（非源码）
+docs/
+
+# 压缩包
+*.rar
+*.zip
+
+# 根目录临时图标（正式图标在 build/ 下）
+/icon.ico
+/icon_1024.png
+
+# 临时 JSON
+repo_payload.json
+
+# 空目录
+server/

@@ -1053,7 +1053,7 @@ const SYNC_DEFS = [
   { key:'scheme',   module:'fangan',  rk:'id' },   // 方案审查
   { key:'units',    module:'units',   rk:'role' }  // 参建单位（record_key=角色）
 ];
-const CLOUD_DEFAULT = { server:'http://1.95.72.129:3000', username:'admin', password:'', token:'', tokenExpires:0 };
+const CLOUD_DEFAULT = { server:'http://your-server:3000', username:'admin', password:'', token:'', tokenExpires:0 };
 function getSyncCfg(){ const c=load(K.syncCfg, CLOUD_DEFAULT); return Object.assign({}, CLOUD_DEFAULT, c||{}); }
 function saveSyncCfg(c){ save(K.syncCfg, c); }
 function getSyncMeta(){ return load(K.syncMeta, { lastSync:0, projectMap:{} }); }
@@ -1241,7 +1241,7 @@ function openCloudSync(){
     </div>
     <div style="display:grid;gap:10px">
       <label style="font-size:12px;color:var(--sub)">服务器地址</label>
-      <input id="sc_server" value="${esc(cfg.server)}" placeholder="http://1.95.72.129:3000" style="padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px"/>
+      <input id="sc_server" value="${esc(cfg.server)}" placeholder="http://your-server:3000" style="padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px"/>
       <label style="font-size:12px;color:var(--sub)">用户名</label>
       <input id="sc_user" value="${esc(cfg.username)}" placeholder="admin" style="padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px"/>
       <label style="font-size:12px;color:var(--sub)">密码</label>

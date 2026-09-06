@@ -1119,8 +1119,10 @@ function cloudRecKey(def, rec, idx){
   return String(rec.id||rec._id||('rec_'+Date.now()+'_'+idx));
 }
 /* 上传：本地各模块 → 服务器（按项目分区 upsert；无 proj 字段的记录归入默认项目） */
-async function cloudUpload(cfg, map){
+async function cloudUpload(cfg, map, incremental){
   let total=0, sent=0;
+  const meta=getSyncMeta();
+  const lastSync = incremental ? (meta.lastSync||0) : 0;
   const localProjs=load(K.proj,[]);
   const defaultPid = (localProjs.length && map[String(localProjs[0].id)]) ? Number(map[String(localProjs[0].id)]) : 0;
   for(const def of SYNC_DEFS){
@@ -1129,6 +1131,8 @@ async function cloudUpload(cfg, map){
     const per={};
     arr.forEach((rec,i)=>{
       if(!rec||typeof rec!=='object') return;
+      const updatedAt = Number(rec.updatedAt||rec.updated_at||0);
+      if(incremental && updatedAt && updatedAt < lastSync) return; // 增量：跳过未变更记录
       const pid = rec.proj ? cloudProjId(rec.proj, map) : defaultPid;
       let mod=def.module;
       if(def.split){ mod = (rec.type==='监理月报') ? 'yuebao' : 'rizhi'; }
@@ -1137,6 +1141,7 @@ async function cloudUpload(cfg, map){
     });
     for(const pid in per){
       const changes=per[pid];
+      if(!changes.length) continue;
       const rr=await cloudApi(cfg,'POST','/api/sync/up',{ projectId:Number(pid), changes });
       total+=(rr&&rr.applied)||0; sent+=changes.length;
     }
@@ -1145,8 +1150,9 @@ async function cloudUpload(cfg, map){
 }
 function cloudProjId(localId, map){ return Number(map[String(localId)])||0; }
 /* 下载：服务器 → 本地合并（本地已有的保留，服务器独有记录并入） */
-async function cloudDownload(cfg, map, inv){
+async function cloudDownload(cfg, map, inv, incremental){
   const meta=getSyncMeta();
+  const lastSync = incremental ? (meta.lastSync||0) : 0;
   let added=0, got=0;
   const pids={}; Object.keys(map).forEach(k=>{ pids[String(map[k])]=1; });
   for(const def of SYNC_DEFS){
@@ -1163,6 +1169,11 @@ async function cloudDownload(cfg, map, inv){
         for(const ch of changes){
           if(ch.deleted) continue;
           const data=ch.data&&typeof ch.data==='object'?ch.data:{};
+          // 增量：只保留 updated_at > 上次同步时间的记录
+          if(incremental){
+            const chUpdated = Number(ch.updated_at||data.updatedAt||data.updated_at||0);
+            if(chUpdated && chUpdated < lastSync) continue;
+          }
           const idx=list.length;
           const rk=def.rk==='role'?String(data.role||''):String(data.id||'');
           if(!rk){ continue; }
@@ -1178,24 +1189,25 @@ async function cloudDownload(cfg, map, inv){
   meta.lastSync=Date.now(); saveSyncMeta(meta);
   return { added, got };
 }
-/* 云同步主流程：mode = both 全量 / upload 仅上传 / download 仅下载 */
+/* 云同步主流程：mode = both 全量 / incremental 增量 / upload 仅上传 / download 仅下载 */
 async function cloudSync(mode){
   if(!IS_DESKTOP){ toast('云同步仅桌面版可用'); return; }
   if(!window.fsBridge.httpPost){ toast('请更新程序后再使用云同步'); return; }
   const cfg=getSyncCfg();
+  const isIncremental = mode==='incremental';
   updateCloudUI('busy','云同步 · 登录中…');
   try{
     await cloudEnsureLogin(cfg);
     if(mode!=='download'){
       updateCloudUI('busy','云同步 · 项目匹配…');
       const prj=await cloudSyncProjects(cfg);
-      updateCloudUI('busy','云同步 · 上传中…');
-      const up=await cloudUpload(cfg, prj.map);
-      if(mode==='both'){
-        updateCloudUI('busy','云同步 · 下载中…');
-        const dn=await cloudDownload(cfg, prj.map, prj.inv);
+      updateCloudUI('busy', isIncremental?'云同步 · 增量上传中…':'云同步 · 上传中…');
+      const up=await cloudUpload(cfg, prj.map, isIncremental);
+      if(mode==='both'||isIncremental){
+        updateCloudUI('busy', isIncremental?'云同步 · 增量下载中…':'云同步 · 下载中…');
+        const dn=await cloudDownload(cfg, prj.map, prj.inv, isIncremental);
         updateCloudUI('ok','云同步 · 已完成');
-        toast('云同步完成：上传 '+up.sent+' 条 / 新增 '+dn.added+' 条');
+        toast((isIncremental?'增量同步完成：':'云同步完成：')+'上传 '+up.sent+' 条 / 新增 '+dn.added+' 条');
       } else {
         updateCloudUI('ok','云同步 · 已完成');
         toast('已上传 '+up.sent+' 条数据到服务器');
@@ -1204,7 +1216,7 @@ async function cloudSync(mode){
       updateCloudUI('busy','云同步 · 项目匹配…');
       const prj=await cloudSyncProjects(cfg);
       updateCloudUI('busy','云同步 · 下载中…');
-      const dn=await cloudDownload(cfg, prj.map, prj.inv);
+      const dn=await cloudDownload(cfg, prj.map, prj.inv, false);
       updateCloudUI('ok','云同步 · 已完成');
       toast('已从服务器同步 '+dn.added+' 条数据');
     }
@@ -1235,10 +1247,17 @@ function openCloudSync(){
       <label style="font-size:12px;color:var(--sub)">密码</label>
       <input id="sc_pass" type="password" value="${esc(cfg.password)}" placeholder="服务器管理员密码" style="padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px"/>
       <div style="font-size:12px;color:var(--sub)">上次同步：${lastTxt}</div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="primary" onclick="cloudSyncModalAction('both')">登录并全量同步</button>
-        <button class="mbtn" onclick="cloudSyncModalAction('upload')">仅上传</button>
-        <button class="mbtn" onclick="cloudSyncModalAction('download')">仅下载</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <button class="primary" onclick="cloudSyncModalAction('both')" style="padding:10px">全量同步</button>
+        <button class="mbtn" onclick="cloudSyncModalAction('incremental')" style="padding:10px">增量同步</button>
+        <button class="mbtn" onclick="cloudSyncModalAction('upload')" style="padding:10px">仅上传</button>
+        <button class="mbtn" onclick="cloudSyncModalAction('download')" style="padding:10px">仅下载</button>
+      </div>
+      <div style="font-size:11px;color:var(--sub);line-height:1.5;margin-top:4px">
+        全量同步：上传全部本地数据 + 下载全部服务器数据（覆盖）<br>
+        增量同步：仅同步上次同步后新增/变更的数据<br>
+        仅上传：只把本地数据上传到服务器<br>
+        仅下载：只从服务器下载数据到本地
       </div>
       <div id="cloudSyncResult" style="font-size:12px;color:var(--sub);min-height:18px;margin-top:4px"></div>
     </div>
@@ -1538,7 +1557,7 @@ function projList(){ return load(K.proj,[]); }
 function statusBadge(s){ const m={"在监":'b-monitor',"竣工":'b-done',"暂停":'b-pause'}; return `<span class="badge ${m[s]||''}">${s}</span>`; }
 function inspBadge(s){ const m={"待整改":'red',"整改中":'amber',"已处理":'green'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
 function prioPill(p){ const m={"P0":'red',"P1":'amber',"P2":''}; return `<span class="pill ${m[p]||''}">${p}</span>`; }
-function stPill(s){ const m={"已送检":'amber',"报告合格":'green',"报告不合格":'red fail',"验收合格":'green',"验收不合格":'red fail',"已签认":'green',"审查中":'amber',"已处理":'green',"监控中":'amber',"待整改":'red fail',"已支付":'green',"通过":'green',"整改后通过":'amber',"不通过":'red fail'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
+function stPill(s){ const m={"已取样":'blue',"已送检":'amber',"报告合格":'green',"报告不合格":'red fail',"验收合格":'green',"验收不合格":'red fail',"已签认":'green',"审查中":'amber',"已处理":'green',"监控中":'amber',"待整改":'red fail',"已支付":'green',"通过":'green',"整改后通过":'amber',"不通过":'red fail'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
 function projSelect(sel){ const pl=projList(); if(!pl.length) return `<select id="${sel}"><option value="">暂无项目，请先添加</option></select>`; return `<select id="${sel}"><option value="">请选择项目</option>${pl.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>`; }
 function projOptions(sel, cur){ return `<select id="${sel}">${projList().map(p=>`<option value="${p.id}" ${cur===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`; }
 function getContractTotal(){ return Number(load(K.contractTotal, 186000000)); }
@@ -1626,7 +1645,24 @@ function buildToday(){
   load(K.invest,[]).forEach(x=>{ if(x.status==="审查中") items.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,act:()=>gotoFocus('invest', x.id)}); });
   load(K.letter,[]).forEach(x=>{ if(x.status==="未回复"&&x.type!=="工作联系单") items.push({key:"letter:"+x.id, tag:"待回函",over:true,title:x.type+": "+x.subject,meta:`${projName(x.proj)} · ${x.no||''} · ${x.date} · 未回复`,act:()=>gotoFocus('letter', x.id)}); });
   load(K.meeting,[]).forEach(x=>{ const f=(x.fields||[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) items.push({key:"meeting:"+x.id, tag:"例会清单",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,act:()=>gotoFocus('meeting', x.id)}); });
-  const tagPages={ "整改":"inspect","旁站异常":"side","投资审查":"invest","待回函":"letter","例会待办":"meeting" };
+  // 见证取样提醒：混凝土已取样超26天待送样；报告不合格直接提醒
+  load(K.sample,[]).forEach(x=>{
+    // 报告不合格：直接提醒
+    if(x.status==="报告不合格"){
+      items.push({key:"sample:"+x.id, tag:"见证取样",over:true,title:`${x.name||'见证取样'} 报告不合格`,meta:`${projName(x.proj)} · ${x.cat||''} · 取样 ${x.sampleDate||'-'} · 报告不合格`,act:()=>gotoFocus('sample', x.id)});
+      return;
+    }
+    // 混凝土已取样：取样日期+26天提醒送样
+    if(x.status!=="已取样") return;
+    const isConcrete = (x.cat||'').includes('混凝土') || (x.name||'').includes('混凝土');
+    if(!isConcrete || !x.sampleDate) return;
+    const d = new Date(x.sampleDate); d.setDate(d.getDate()+26);
+    const remind = d.toISOString().slice(0,10);
+    if(remind <= t){
+      items.push({key:"sample:"+x.id, tag:"见证取样",over:remind<t,title:`${x.name||'混凝土'} 取样已超26天待送样`,meta:`${projName(x.proj)} · 取样 ${x.sampleDate} · 应送样 ${remind} · ${x.status}`,act:()=>gotoFocus('sample', x.id)});
+    }
+  });
+  const tagPages={ "整改":"inspect","旁站异常":"side","投资审查":"invest","待回函":"letter","例会待办":"meeting","见证取样":"sample" };
   items.forEach(it=>{
     const doneToday = isTodoDoneToday(it.key, t);
     it.archived = isTodoDone(it.key) && !doneToday; // 历史已处理：不显示在今日任何区域
@@ -2320,7 +2356,7 @@ function openSmModal(x, presetName, presetCat){
     <div class="field half"><label>取样数量</label><input id="m_qty" value="${esc(x?.qty||'')}"></div>
     <div class="field half"><label>取样时间</label><input id="m_sampleDate" type="date" value="${esc(x?.sampleDate||'')}"></div>
     <div class="field half"><label>送样时间</label><input id="m_sendDate" type="date" value="${esc(x?.sendDate||'')}"></div>
-    <div class="field half"><label>状态</label><select id="m_status">${['已送检','报告合格','报告不合格'].map(s=>`<option ${x?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="field half"><label>状态</label><select id="m_status">${['已取样','已送检','报告合格','报告不合格'].map(s=>`<option ${x?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="field"><label>备注</label><textarea id="m_note">${esc(x?.note||'')}</textarea>${aiOptBtn('m_note','sample')}</div>
     <button class="btn" style="width:100%" onclick="saveSm(${e?`'${x.id}'`:'null'})">保存</button>`);
 }

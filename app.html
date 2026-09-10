@@ -1723,7 +1723,7 @@ function buildToday(){
     items.push({key:"side:"+x.id, tag:"旁站异常",over:false,title:x.spot+" 旁站异常",meta:`${projName(x.proj)} · ${x.date} · ${x.abnormal}`,act:()=>gotoFocus('side', x.id)}); });
   load(K.invest,[]).forEach(x=>{ if(x.status==="审查中") items.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.title||x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,act:()=>gotoFocus('invest', x.id)}); });
   load(K.letter,[]).forEach(x=>{ if(x.status==="未回复"&&x.type!=="工作联系单") items.push({key:"letter:"+x.id, tag:"待回函",over:true,title:x.type+": "+x.subject,meta:`${projName(x.proj)} · ${x.no||''} · ${x.date} · 未回复`,act:()=>gotoFocus('letter', x.id)}); });
-  load(K.meeting,[]).forEach(x=>{ const f=(x.fields||[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) items.push({key:"meeting:"+x.id, tag:"例会清单",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,act:()=>gotoFocus('meeting', x.id)}); });
+  load(K.meeting,[]).forEach(x=>{ const f=(Array.isArray(x.fields)?x.fields:[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) items.push({key:"meeting:"+x.id, tag:"例会清单",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,act:()=>gotoFocus('meeting', x.id)}); });
   // 见证取样提醒：混凝土已取样超26天待送样；不合格直接提醒
   load(K.sample,[]).forEach(x=>{
     // 不合格：直接提醒
@@ -1943,7 +1943,7 @@ function overviewHTML(){
     pendingItems.push({key:"side:"+x.id, tag:"旁站异常",over:false,title:x.spot+" 旁站异常",meta:`${projName(x.proj)} · ${x.date} · ${x.abnormal}`,page:"side",rid:x.id,color:"#7c5cff"}); });
   invest.forEach(x=>{ if(x.status==="审查中") pendingItems.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.title||x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,page:"invest",rid:x.id,color:"#22d3a6"}); });
   letter.forEach(x=>{ if(x.status==="未回复"&&x.type!=="工作联系单") pendingItems.push({key:"letter:"+x.id, tag:"待回函",over:true,title:x.type+": "+x.subject,meta:`${projName(x.proj)} · ${x.no||''} · ${x.date} · 未回复`,page:"letter",rid:x.id,color:"#ef4444"}); });
-  meeting.forEach(x=>{ const f=(x.fields||[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) pendingItems.push({key:"meeting:"+x.id, tag:"例会待办",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,page:"meeting",rid:x.id,color:"#2bb3ff"}); });
+  meeting.forEach(x=>{ const f=(Array.isArray(x.fields)?x.fields:[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) pendingItems.push({key:"meeting:"+x.id, tag:"例会待办",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,page:"meeting",rid:x.id,color:"#2bb3ff"}); });
   pendingItems.forEach(it=>{ it.done = isTodoDone(it.key); it.visited = !!go[it.key]; });
   const pending = pendingItems.filter(it=>!it.done).sort((a,b)=> (b.over?1:0)-(a.over?1:0));
 
@@ -4160,7 +4160,7 @@ function meetingHTML(){
   window.__mSearch = window.__mSearch || '';
   const q = window.__mSearch.trim().toLowerCase();
   const displayList = q ? list.filter(m=>{
-    const hay = [m.title||'', (m.fields||[]).map(f=>f.key+' '+(f.value||'')).join(' '), (m.doc&&m.doc.name)||''].join(' ').toLowerCase();
+    const hay = [m.title||'', (Array.isArray(m.fields)?m.fields:[]).map(f=>f.key+' '+(f.value||'')).join(' '), (m.doc&&m.doc.name)||''].join(' ').toLowerCase();
     return hay.includes(q);
   }) : list;
   if(displayList.length===0) h+=`<div class="empty-hint">${q?'未搜索到匹配清单':'暂无例会清单'}</div>`;
@@ -4172,8 +4172,8 @@ function meetingHTML(){
     window.__meetingPage = curPage;
     const pageRows = displayList.slice((curPage-1)*pageSize, curPage*pageSize);
     h+=`<div class="grid grid-2">`+pageRows.map(m=>{
-      const fcount=(m.fields||[]).length;
-      const timeF=(m.fields||[]).find(f=>f.key==='会议时间');
+      const fcount=(Array.isArray(m.fields)?m.fields:[]).length;
+      const timeF=(Array.isArray(m.fields)?m.fields:[]).find(f=>f.key==='会议时间');
       const docBadge = m.doc? `<span class="pill" style="background:var(--accent-soft);color:var(--accent)">📎 ${esc(m.doc.name)}</span>`:'';
       return `<div class="proj">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><h3 style="font-size:15px">${esc(m.title||'未命名清单')}</h3>${docBadge}</div>
@@ -4200,7 +4200,7 @@ window.renderMeetingList = renderMeetingList;
 function openMeetingListModal(id){
   const edit = !!id;
   const m = edit ? (load(K.meeting,[]).find(x=>x.id===id)) : null;
-  const fields = m ? (m.fields||[]) : [{key:'会议时间',value:todayDisplay()},{key:'会议大概内容',value:''}];
+  const fields = m ? (Array.isArray(m.fields)?m.fields:[]) : [{key:'会议时间',value:todayDisplay()},{key:'会议大概内容',value:''}];
   window.__mlFields = fields.map(f=>({...f}));
   window.__mlDoc = m && m.doc ? {...m.doc} : null;
   const title = edit ? '编辑例会清单' : '添加例会清单';
@@ -4286,14 +4286,14 @@ function saveMeetingList(id){
 window.saveMeetingList=saveMeetingList;
 function meetingText(m){
   const lines=[`监 理 例 会 清 单：${m.title||''}`];
-  (m.fields||[]).forEach(f=>{ lines.push(`${f.key}：${f.value||'—'}`); });
+  (Array.isArray(m.fields)?m.fields:[]).forEach(f=>{ lines.push(`${f.key}：${f.value||'—'}`); });
   if(m.doc){ lines.push(`附件文档：${m.doc.name}`); }
   lines.push('（本清单经各参建单位签认后作为监理资料归档，依据 GB/T 50319-2013 第 7 章。）');
   return lines.join('\n');
 }
 function viewMeeting(id){
   const m=load(K.meeting,[]).find(x=>x.id===id); if(!m) return;
-  const fieldsHtml=(m.fields||[]).map(f=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 110px;color:var(--ink-3);font-weight:600">${esc(f.key)}</span><span style="flex:1;white-space:pre-wrap">${esc(f.value||'—')}</span></div>`).join('')||'<span class="pcode">暂无字段</span>';
+  const fieldsHtml=(Array.isArray(m.fields)?m.fields:[]).map(f=>`<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)"><span style="flex:0 0 110px;color:var(--ink-3);font-weight:600">${esc(f.key)}</span><span style="flex:1;white-space:pre-wrap">${esc(f.value||'—')}</span></div>`).join('')||'<span class="pcode">暂无字段</span>';
   const docHtml = m.doc ? `<div class="section-title" style="font-size:14px;margin:14px 0 0">原始文档</div><div class="btn-row" style="margin-top:8px"><button class="btn sm" onclick="downloadMeetingDoc('${m.id}')">📎 下载 ${esc(m.doc.name)}</button></div>` : '';
   const editBtn = PERM[ROLE].addProj ? `<button class="btn sm ghost" onclick="openMeetingListModal('${m.id}')">编辑清单</button>` : '';
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>${esc(m.title||'未命名清单')}</h3>

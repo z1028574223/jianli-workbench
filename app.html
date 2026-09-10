@@ -880,11 +880,7 @@ window.mammothReady = new Promise(function(resolve){
     <span id="cloudSyncDot" class="dot" style="background:var(--sub)"></span>
     <span id="cloudSyncText">云同步 · 未连接</span>
   </div>
-  <div id="fsDirBox" class="fsdir" style="display:none">
-    <span class="fsdir-ico">📁</span>
-    <span id="fsDirText" class="fsdir-text" title="点击打开数据目录">数据目录</span>
-    <button id="fsDirChange" class="fsdir-btn" type="button">更换</button>
-  </div>
+
 </div>
 
 <div class="container">
@@ -1286,10 +1282,10 @@ function openCloudSync(){
       <input id="sc_pass" type="password" value="${esc(cfg.password)}" placeholder="服务器管理员密码" style="padding:8px 10px;border:1px solid var(--border-soft);border-radius:8px"/>
       <div style="font-size:12px;color:var(--sub)">上次同步：${lastTxt}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-        <button class="primary" onclick="cloudSyncModalAction('both')" style="padding:10px">全量同步</button>
-        <button class="mbtn" onclick="cloudSyncModalAction('incremental')" style="padding:10px">增量同步</button>
-        <button class="mbtn" onclick="cloudSyncModalAction('upload')" style="padding:10px">仅上传</button>
-        <button class="mbtn" onclick="cloudSyncModalAction('download')" style="padding:10px">仅下载</button>
+        <button class="primary" onclick="cloudSyncModalAction('both')" style="padding:12px;background:linear-gradient(135deg,#533afd,#7c5cff);color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(83,58,253,0.3)">全量同步</button>
+        <button class="mbtn" onclick="cloudSyncModalAction('incremental')" style="padding:12px;background:linear-gradient(135deg,#22d3a6,#10b981);color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(34,211,166,0.3)">增量同步</button>
+        <button class="mbtn" onclick="cloudSyncModalAction('upload')" style="padding:12px;background:linear-gradient(135deg,#ff8a5c,#f97316);color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(255,138,92,0.3)">仅上传</button>
+        <button class="mbtn" onclick="cloudSyncModalAction('download')" style="padding:12px;background:linear-gradient(135deg,#2bb3ff,#0ea5e9);color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(43,179,255,0.3)">仅下载</button>
       </div>
       <div style="font-size:11px;color:var(--sub);line-height:1.5;margin-top:4px">
         全量同步：上传全部本地数据 + 下载全部服务器数据（覆盖）<br>
@@ -1694,6 +1690,7 @@ function editProj(id){
     <div class="field"><label>项目名称</label><input id="epName" value="${esc(p.name)}"></div>
     <div class="field half"><label>当前阶段</label><select id="epStatus"><option ${p.status==='在监'?'selected':''}>在监</option><option ${p.status==='竣工'?'selected':''}>竣工</option><option ${p.status==='暂停'?'selected':''}>暂停</option></select></div>
     <div class="field half"><label>总体进度(%)</label><input id="epProgress" type="number" min="0" max="100" value="${p.progress??0}"></div>
+    <div class="field half"><label>计划竣工日期</label><input id="epPlanDate" type="date" value="${esc(p.planDate||'')}"></div>
     <div class="field"><label>位置 / 标段</label><input id="epLoc" value="${esc(p.loc||'')}"></div>
     <div class="field" style="grid-column:1/-1"><label>备注</label><input id="epNote" value="${esc(p.note||'')}"></div>
     <div class="btn-row"><button class="btn" onclick="saveProj('${id}')">保存</button></div>`);
@@ -1701,7 +1698,7 @@ function editProj(id){
 function saveProj(id){
   const name=val('epName'); if(!name||!name.trim()){ toast('请输入项目名称'); return; }
   const list=projList(); const p=list.find(x=>x.id===id); if(!p) return;
-  p.name=name.trim(); p.status=val('epStatus'); p.progress=Number(val('epProgress')||0); p.loc=val('epLoc')||''; p.note=val('epNote')||'';
+  p.name=name.trim(); p.status=val('epStatus'); p.progress=Number(val('epProgress')||0); p.planDate=val('epPlanDate')||''; p.loc=val('epLoc')||''; p.note=val('epNote')||'';
   save(K.proj, list); closeModal(); toast('已保存'); render('overview');
 }
 function delProj(id){
@@ -1929,10 +1926,38 @@ function overviewHTML(){
   const now = new Date();
   const timeStr = `${now.getFullYear()}年${String(now.getMonth()+1).padStart(2,'0')}月${String(now.getDate()).padStart(2,'0')}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-  // 顶部4卡
-  const totalCount = insp.length + side.length + sample.length + material.length + check.length + machine.length + special.length + scheme.length + meeting.length + letter.length + notice.length;
-  const pendingCount = inspOpen + letterWait + noticeOpen + meetingTodo + sampleWait;
+  // 顶部4卡 —— 按本月真实统计 + 真实环比
+  const now2 = new Date();
+  const thisYear = now2.getFullYear(), thisMonth = now2.getMonth();
+  const lastMonthDate = new Date(thisYear, thisMonth - 1, 1);
+  const lastYear = lastMonthDate.getFullYear(), lastMonth = lastMonthDate.getMonth();
+  const inMonth = (ds, y, m) => {
+    if(!ds) return false;
+    const d = new Date(String(ds).replace(new RegExp('/','g'), '-'));
+    return !isNaN(d) && d.getFullYear()===y && d.getMonth()===m;
+  };
+  const recDate = (r) => r.date || r.createdAt || r.sampleDate || r.sendDate || '';
+  const cntThis = (arr) => arr.filter(r => inMonth(recDate(r), thisYear, thisMonth)).length;
+  const cntLast = (arr) => arr.filter(r => inMonth(recDate(r), lastYear, lastMonth)).length;
+  const totalCount = cntThis(insp)+cntThis(side)+cntThis(sample)+cntThis(material)+cntThis(check)+cntThis(machine)+cntThis(special)+cntThis(scheme)+cntThis(meeting)+cntThis(letter)+cntThis(notice);
+  const totalCountLast = cntLast(insp)+cntLast(side)+cntLast(sample)+cntLast(material)+cntLast(check)+cntLast(machine)+cntLast(special)+cntLast(scheme)+cntLast(meeting)+cntLast(letter)+cntLast(notice);
+  const pendingThis = insp.filter(r=>r.status!=="已处理"&&inMonth(recDate(r),thisYear,thisMonth)).length
+    + letter.filter(r=>r.status==="未回复"&&r.type!=="工作联系单"&&inMonth(recDate(r),thisYear,thisMonth)).length
+    + notice.filter(r=>!r.docx&&inMonth(recDate(r),thisYear,thisMonth)).length
+    + meeting.filter(r=>inMonth(recDate(r),thisYear,thisMonth)).length
+    + sample.filter(r=>r.status!=="合格"&&inMonth(recDate(r),thisYear,thisMonth)).length;
+  const pendingLast = insp.filter(r=>r.status!=="已处理"&&inMonth(recDate(r),lastYear,lastMonth)).length
+    + letter.filter(r=>r.status==="未回复"&&r.type!=="工作联系单"&&inMonth(recDate(r),lastYear,lastMonth)).length
+    + notice.filter(r=>!r.docx&&inMonth(recDate(r),lastYear,lastMonth)).length
+    + meeting.filter(r=>inMonth(recDate(r),lastYear,lastMonth)).length
+    + sample.filter(r=>r.status!=="合格"&&inMonth(recDate(r),lastYear,lastMonth)).length;
+  const pendingCount = pendingThis;
+  const noticeThis = cntThis(notice);
+  const noticeLast = cntLast(notice);
   const aiCalls = Number(load('ai:monthCalls', 0));
+  const deltaTotal = totalCount - totalCountLast;
+  const deltaPending = pendingThis - pendingLast;
+  const deltaNotice = noticeThis - noticeLast;
 
   // 待处理问题列表（复用 buildToday 逻辑）
   const st = loadTodoState(); const go = loadTodoGo();
@@ -1978,22 +2003,22 @@ function overviewHTML(){
     <div class="stat-card reveal">
       <div class="stat-label">本月台账总数</div>
       <div class="stat-value" style="color:#533afd">${totalCount}</div>
-      <div class="stat-delta up">+${Math.min(totalCount,12)} 较上月</div>
+      <div class="stat-delta ${deltaTotal>=0?'up':'down'}">${deltaTotal>=0?'+':''}${deltaTotal} 较上月</div>
     </div>
     <div class="stat-card reveal">
       <div class="stat-label">待处理问题</div>
       <div class="stat-value" style="color:${pendingCount>0?'#ef4444':'#22d3a6'}">${pendingCount}</div>
-      <div class="stat-delta ${pendingCount>0?'down':'up'}">${pendingCount>0?'-':'+'}${Math.min(pendingCount||3,3)} 较上月</div>
+      <div class="stat-delta ${deltaPending<=0?'up':'down'}">${deltaPending<=0?'+':'-'}${Math.abs(deltaPending)} 较上月</div>
     </div>
     <div class="stat-card reveal">
       <div class="stat-label">已签发通知单</div>
-      <div class="stat-value" style="color:#2bb3ff">${notice.length}</div>
-      <div class="stat-delta up">+${Math.max(0, notice.length-2)} 较上月</div>
+      <div class="stat-value" style="color:#2bb3ff">${noticeThis}</div>
+      <div class="stat-delta ${deltaNotice>=0?'up':'down'}">${deltaNotice>=0?'+':''}${deltaNotice} 较上月</div>
     </div>
     <div class="stat-card reveal">
       <div class="stat-label">AI 本月调用</div>
       <div class="stat-value" style="color:#22d3a6">${aiCalls}</div>
-      <div class="stat-delta up">+${Math.min(aiCalls,18)} 较上月</div>
+      <div class="stat-delta up">+${aiCalls} 较上月</div>
     </div>
   </div>
 
@@ -2004,7 +2029,7 @@ function overviewHTML(){
         <div class="ring-title">工程总体进度</div>
         <div class="ring-value" id="ringProgValue" data-to="${proj.progress}" data-suf="%" style="color:#533afd">0%</div>
         <div class="ring-desc">已完分部分项 ${proj.progress}% · 剩余工作量 ${remainWork}%</div>
-        <div class="ring-meta"><span><b>计划竣工</b> ${esc(proj.planDate||'2027-06-30')}</span></div>
+        <div class="ring-meta"><span><b>计划竣工</b> ${esc(proj.planDate||'未设置')}</span></div>
       </div>
     </div>
     <div class="ring-card reveal">
@@ -4157,6 +4182,12 @@ function meetingHTML(){
   h+=`<div class="hint">以“清单”方式记录每次例会：自定义添加字段项（会议时间、会议大概内容、参会人员等），并可上传原始 Word 会议纪要，清单与文档一并归档保存。支持上传 Word 自动识别并生成为清单。</div>`;
   h+=`<div class="card" style="padding:12px 14px;margin-bottom:14px"><div class="field" style="margin:0"><input id="mSearch" placeholder="搜索清单标题、字段内容、文档名…" oninput="renderMeetingList()"></div></div>`;
   const list=load(K.meeting,[]);
+  // 按会议日期降序排序（最新在前）：优先用 fields 中的"会议时间"，否则用 createdAt
+  const meetingDate = (m) => {
+    const tf = Array.isArray(m.fields) ? m.fields.find(f=>f.key==='会议时间') : null;
+    return (tf && tf.value) ? String(tf.value) : (m.createdAt || '');
+  };
+  list.sort((a,b) => meetingDate(b).localeCompare(meetingDate(a)));
   window.__mSearch = window.__mSearch || '';
   const q = window.__mSearch.trim().toLowerCase();
   const displayList = q ? list.filter(m=>{
@@ -5175,40 +5206,10 @@ window.linkLogProj=linkLogProj; window.doLinkLogProj=doLinkLogProj; window.saveI
 window.fixAllLogs=fixAllLogs; window.renderSmLib=renderSmLib; window.setSmCat=setSmCat; window.openSmModal=openSmModal; window.setSideBig=setSideBig; window.setSideSub=setSideSub;
 window.editLog=editLog; window.updLog=updLog; window.delLog=delLog;
 
-/* ============ 桌面版：数据目录初始化与目录更换 ============ */
-function initFsDir(){
-  if(!IS_DESKTOP) return;
-  const box=document.getElementById('fsDirBox');
-  const txt=document.getElementById('fsDirText');
-  const changeBtn=document.getElementById('fsDirChange');
-  if(!box||!txt) return;
-  const refresh=()=>{ try{ txt.textContent=window.fsBridge.getDataDir(); }catch(e){ txt.textContent='(未知目录)'; } };
-  box.style.display='flex';
-  refresh();
-  // 点击目录文字 → 打开文件夹
-  txt.onclick=()=>{ try{ window.fsBridge.openDataDir(); }catch(e){} };
-  // 更换目录 → 调出系统选择框，成功后重载页面数据
-  changeBtn.onclick=async()=>{
-    try{
-      const ok=await window.fsBridge.setDataDir();
-      if(ok){
-        refresh();
-        toast('数据目录已更换，正在重新加载…');
-        // 重新从新目录读取并刷新当前页（关键：确保重启也能从新目录恢复）
-        const cur=document.body.dataset.page||'overview';
-        setTimeout(()=>{ try{ render(cur); }catch(_){} }, 120);
-      }
-    }catch(e){ console.error('更换目录失败',e); toast('更换目录失败：'+e.message); }
-  };
-  // 主进程菜单更换目录后的通知
-  try{
-    window.fsBridge.onDirChanged(()=>{ refresh(); const cur=document.body.dataset.page||'overview'; setTimeout(()=>{ try{ render(cur); }catch(_){} }, 120); });
-  }catch(e){}
-}
+
 
 /* ============ 启动 ============ */
 seed();
-initFsDir();
 // 首屏：等 DOM 与布局就绪后再渲染总览，避免 ECharts 在容器尺寸为 0 时初始化（导致刷新即卡住/空白）
 function bootOverview(){
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', ()=>requestAnimationFrame(()=>render('overview')), {once:true}); }

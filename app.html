@@ -875,10 +875,15 @@ window.mammothReady = new Promise(function(resolve){
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><path d="M9 11h.01M15 11h.01"/></svg>
     <span>北星小学东校区二期扩建工程 · 监理工作台</span>
   </div>
-  <div class="sync"><span class="dot"></span><span id="syncText">本地存储 · 已保存</span></div>
+  <div class="sync" style="display:none"><span class="dot"></span><span id="syncText"></span></div>
   <div class="sync" id="cloudSyncBox" style="display:none;cursor:pointer" title="点击打开云同步设置">
     <span id="cloudSyncDot" class="dot" style="background:var(--sub)"></span>
     <span id="cloudSyncText">云同步 · 未连接</span>
+  </div>
+  <div id="fsDirBox" class="fsdir" style="display:none">
+    <span class="fsdir-ico">📁</span>
+    <span id="fsDirText" class="fsdir-text" title="点击打开数据目录">数据目录</span>
+    <button id="fsDirChange" class="fsdir-btn" type="button">更换</button>
   </div>
 
 </div>
@@ -1026,7 +1031,7 @@ function save(k,v){
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 let ROLE = load(K.role, "操作员");
-function flashSync(){ const t=document.getElementById('syncText'); if(!t) return; t.textContent="保存中…"; setTimeout(()=>{ t.textContent= IS_DESKTOP ? "已保存到数据目录" : "本地存储 · 已保存"; },400); }
+function flashSync(){ /* 不显示保存状态提示 */ }
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),1800); }
 
 /* ============ 云同步：接入华为服务器（Node.js + SQLite 后端） ============ */
@@ -1333,6 +1338,37 @@ const PERM = {
 };
 // 若 localStorage 中保存了旧角色（如总监/专监/监理员），回退到默认操作员，避免 PERM[ROLE] 为 undefined
 if(!PERM[ROLE]) ROLE = "操作员";
+
+/* ============ 桌面版：数据目录初始化与目录更换 ============ */
+function initFsDir(){
+  if(!IS_DESKTOP) return;
+  const box=document.getElementById('fsDirBox');
+  const txt=document.getElementById('fsDirText');
+  const changeBtn=document.getElementById('fsDirChange');
+  if(!box||!txt) return;
+  const refresh=()=>{ try{ txt.textContent=window.fsBridge.getDataDir(); }catch(e){ txt.textContent='(未知目录)'; } };
+  box.style.display='flex';
+  refresh();
+  // 点击目录文字 → 打开文件夹
+  txt.onclick=()=>{ try{ window.fsBridge.openDataDir(); }catch(e){} };
+  // 更换目录 → 调出系统选择框，成功后重载页面数据
+  changeBtn.onclick=async()=>{
+    try{
+      const ok=await window.fsBridge.setDataDir();
+      if(ok){
+        refresh();
+        toast('数据目录已更换，正在重新加载…');
+        // 重新从新目录读取并刷新当前页（关键：确保重启也能从新目录恢复）
+        const cur=document.body.dataset.page||'overview';
+        setTimeout(()=>{ try{ render(cur); }catch(_){} }, 120);
+      }
+    }catch(e){ console.error('更换目录失败',e); toast('更换目录失败：'+e.message); }
+  };
+  // 主进程菜单更换目录后的通知
+  try{
+    window.fsBridge.onDirChanged(()=>{ refresh(); const cur=document.body.dataset.page||'overview'; setTimeout(()=>{ try{ render(cur); }catch(_){} }, 120); });
+  }catch(e){}
+}
 
 /* ============ 预置示例数据（铁律6） ============ */
 function seed(){
@@ -5210,6 +5246,7 @@ window.editLog=editLog; window.updLog=updLog; window.delLog=delLog;
 
 /* ============ 启动 ============ */
 seed();
+initFsDir();
 // 首屏：等 DOM 与布局就绪后再渲染总览，避免 ECharts 在容器尺寸为 0 时初始化（导致刷新即卡住/空白）
 function bootOverview(){
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', ()=>requestAnimationFrame(()=>render('overview')), {once:true}); }

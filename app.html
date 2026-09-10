@@ -1169,6 +1169,44 @@ async function cloudDownload(cfg, map, inv, incremental){
         for(const ch of changes){
           if(ch.deleted) continue;
           const data=ch.data&&typeof ch.data==='object'?ch.data:{};
+          // 兼容 iOS 端上传：data 中无 id 字段时，用 record_key 作为 id（iOS 端 id 只存在于 record_key）
+          if(!data.id && ch.record_key) data.id = ch.record_key;
+          // 兼容 iOS 端上传：会议纪要 fields 是字符串（纪要要点），电脑端期望数组 [{key,value}]
+          if(mod === 'lihui' && data.fields){
+            if(typeof data.fields === 'string'){
+              data.fields = [{key:'纪要要点', value:data.fields}];
+            } else if(!Array.isArray(data.fields)){
+              data.fields = [];
+            }
+          }
+          // 兼容 iOS 端上传：投资监理（touzi）数据格式转换
+          if(mod === 'touzi'){
+            // 合同总价：iOS 端作为 record_key=contract_total 的记录上传，电脑端单独存储在 K.contractTotal
+            if(ch.record_key === 'contract_total' || data.type === '合同总价'){
+              if(data.amount){
+                try { setContractTotal(parseFloat(data.amount) || 0); } catch(e){}
+              }
+              continue; // 不加入款项列表
+            }
+            // 补充电脑端期望但 iOS 端没有的字段
+            if(data.proj === undefined) data.proj = '';
+            if(data.cert === undefined) data.cert = '';
+            if(data.note === undefined) data.note = '';
+          }
+          // 兼容 iOS 端上传：进度对比（jindu）数据格式转换
+          if(mod === 'jindu'){
+            // plan/actual：iOS 端是字符串（可能带%），电脑端期望数字
+            if(data.plan !== undefined){
+              const v = parseFloat(String(data.plan).replace('%',''));
+              data.plan = isNaN(v) ? 0 : v;
+            }
+            if(data.actual !== undefined){
+              const v = parseFloat(String(data.actual).replace('%',''));
+              data.actual = isNaN(v) ? 0 : v;
+            }
+            // 补充 proj 字段
+            if(data.proj === undefined) data.proj = '';
+          }
           // 增量：只保留 updated_at > 上次同步时间的记录
           if(incremental){
             const chUpdated = Number(ch.updated_at||data.updatedAt||data.updated_at||0);
@@ -1683,7 +1721,7 @@ function buildToday(){
     items.push({key:"insp:"+x.id, tag:"整改",over:od,title:x.problem,meta:`${projName(x.proj)} · ${x.spot} · 期限 ${x.due} · ${x.level}`,act:()=>gotoFocus('inspect', x.id)}); });
   load(K.side,[]).forEach(x=>{ if(x.abnormal==="无"||!x.abnormal)return;
     items.push({key:"side:"+x.id, tag:"旁站异常",over:false,title:x.spot+" 旁站异常",meta:`${projName(x.proj)} · ${x.date} · ${x.abnormal}`,act:()=>gotoFocus('side', x.id)}); });
-  load(K.invest,[]).forEach(x=>{ if(x.status==="审查中") items.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,act:()=>gotoFocus('invest', x.id)}); });
+  load(K.invest,[]).forEach(x=>{ if(x.status==="审查中") items.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.title||x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,act:()=>gotoFocus('invest', x.id)}); });
   load(K.letter,[]).forEach(x=>{ if(x.status==="未回复"&&x.type!=="工作联系单") items.push({key:"letter:"+x.id, tag:"待回函",over:true,title:x.type+": "+x.subject,meta:`${projName(x.proj)} · ${x.no||''} · ${x.date} · 未回复`,act:()=>gotoFocus('letter', x.id)}); });
   load(K.meeting,[]).forEach(x=>{ const f=(x.fields||[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) items.push({key:"meeting:"+x.id, tag:"例会清单",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,act:()=>gotoFocus('meeting', x.id)}); });
   // 见证取样提醒：混凝土已取样超26天待送样；不合格直接提醒
@@ -1903,7 +1941,7 @@ function overviewHTML(){
     pendingItems.push({key:"insp:"+x.id, tag:"整改",over:od,title:x.problem,meta:`${projName(x.proj)} · ${x.spot} · 期限 ${x.due} · ${x.level}`,page:"inspect",rid:x.id,color:"#ff8a5c"}); });
   side.forEach(x=>{ if(x.abnormal==="无"||!x.abnormal)return;
     pendingItems.push({key:"side:"+x.id, tag:"旁站异常",over:false,title:x.spot+" 旁站异常",meta:`${projName(x.proj)} · ${x.date} · ${x.abnormal}`,page:"side",rid:x.id,color:"#7c5cff"}); });
-  invest.forEach(x=>{ if(x.status==="审查中") pendingItems.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,page:"invest",rid:x.id,color:"#22d3a6"}); });
+  invest.forEach(x=>{ if(x.status==="审查中") pendingItems.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.title||x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,page:"invest",rid:x.id,color:"#22d3a6"}); });
   letter.forEach(x=>{ if(x.status==="未回复"&&x.type!=="工作联系单") pendingItems.push({key:"letter:"+x.id, tag:"待回函",over:true,title:x.type+": "+x.subject,meta:`${projName(x.proj)} · ${x.no||''} · ${x.date} · 未回复`,page:"letter",rid:x.id,color:"#ef4444"}); });
   meeting.forEach(x=>{ const f=(x.fields||[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) pendingItems.push({key:"meeting:"+x.id, tag:"例会待办",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,page:"meeting",rid:x.id,color:"#2bb3ff"}); });
   pendingItems.forEach(it=>{ it.done = isTodoDone(it.key); it.visited = !!go[it.key]; });
@@ -2806,7 +2844,7 @@ function progressHTML(){
   if(pr.length===0) h+=`<div class="empty-hint">暂无进度数据</div>`;
   h+=`<div class="card pr-table-wrap" style="padding:0;overflow:auto"><table><thead><tr><th>月份</th><th>项目</th><th>计划%</th><th>实际%</th><th>偏差</th><th>说明</th><th style="width:130px">操作</th></tr></thead><tbody>`;
   pr.forEach(x=>{ const diff=Number(x.actual)-Number(x.plan); const col=diff<0?'var(--red)':(diff>0?'var(--green)':'var(--sub)');
-    h+=`<tr><td>${x.month}</td><td>${esc(projName(x.proj))}</td><td>${x.plan}</td><td>${x.actual}</td><td style="color:${col};font-weight:700">${diff>0?'+':''}${diff}%</td><td>${esc(x.note||'')}</td><td><div style="display:flex;gap:10px;flex-wrap:nowrap"><button class="btn sm ghost" data-ep="${x.id}">编辑</button><button class="btn sm danger" onclick="deleteItem('${K.progress}','${x.id}')">删</button></div></td></tr>`; });
+    h+=`<tr><td>${x.name||x.month}</td><td>${esc(projName(x.proj))}</td><td>${x.plan}</td><td>${x.actual}</td><td style="color:${col};font-weight:700">${diff>0?'+':''}${diff}%</td><td>${esc(x.note||'')}</td><td><div style="display:flex;gap:10px;flex-wrap:nowrap"><button class="btn sm ghost" data-ep="${x.id}">编辑</button><button class="btn sm danger" onclick="deleteItem('${K.progress}','${x.id}')">删</button></div></td></tr>`; });
   return h+`</tbody></table></div><div class="mtip">💡 偏差为负（实际＜计划）即进度滞后，需在监理月报中分析处置。</div>`;
 }
 function bindProgress(){ const pr=load(K.progress,[]); document.getElementById('addPr')?.addEventListener('click',()=>openPrModal(null)); document.querySelectorAll('[data-ep]').forEach(b=>b.onclick=()=>openPrModal(pr.find(i=>i.id===b.dataset.ep))); }
@@ -2814,13 +2852,13 @@ function openPrModal(x){
   const e=!!x;
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>${e?'编辑进度':'录入月度进度对比'}</h3>
     <div class="field"><label>关联项目</label>${projOptions('pr_proj', x?.proj)}</div>
-    <div class="field half"><label>月份</label><input id="pr_month" value="${esc(x?.month||todayDisplay().slice(0,7))}"></div>
+    <div class="field half"><label>月份</label><input id="pr_month" value="${esc(x?.name||x?.month||todayDisplay().slice(0,7))}"></div>
     <div class="field half"><label>计划进度%</label><input id="pr_plan" type="number" value="${x?.plan??0}"></div>
     <div class="field half"><label>实际进度%</label><input id="pr_act" type="number" value="${x?.actual??0}"></div>
     <div class="field"><label>偏差说明/处置</label><textarea id="pr_note">${esc(x?.note||'')}</textarea></div>
     <button class="btn" style="width:100%" onclick="savePr(${e?`'${x.id}'`:'null'})">保存</button>`);
 }
-function savePr(id){ const pr=load(K.progress,[]); const d={proj:val('pr_proj'),month:val('pr_month'),plan:Number(val('pr_plan')||0),actual:Number(val('pr_act')||0),note:val('pr_note')};
+function savePr(id){ const pr=load(K.progress,[]); const d={proj:val('pr_proj'),name:val('pr_month'),plan:Number(val('pr_plan')||0),actual:Number(val('pr_act')||0),note:val('pr_note')};
   if(id){ Object.assign(pr.find(x=>x.id===id),d); } else { pr.unshift({id:uid(),...d}); } save(K.progress,pr); closeModal(); toast('已保存'); render('progress'); }
 
 /* ---- 投资监理（投资监理子技能） ---- */
@@ -2866,7 +2904,7 @@ function investHTML(){
   pageRows.forEach(x=>{
     const nextLabel = x.status==='审查中'?'签认':x.status==='已签认'?'支付':'重置';
     const op = PERM[ROLE].finance ? `<div style="display:flex;gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ei="${x.id}">编辑</button><button class="btn sm ghost" data-si="${x.id}">${nextLabel}</button><button class="btn sm danger" onclick="deleteItem('${K.invest}','${x.id}')">删</button></div>` : '';
-    h+=`<tr><td>${esc(x.date)}</td><td><span class="pill">${esc(x.type)}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.content||'')}</td><td style="text-align:right;font-weight:600">${Number(x.amount||0).toLocaleString()}</td><td>${stPill(x.status)}</td><td>${esc(x.cert||'')}</td><td>${op}</td></tr>`;
+    h+=`<tr><td>${esc(x.date)}</td><td><span class="pill">${esc(x.type)}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.title||x.content||'')}</td><td style="text-align:right;font-weight:600">${Number(x.amount||0).toLocaleString()}</td><td>${stPill(x.status)}</td><td>${esc(x.cert||'')}</td><td>${op}</td></tr>`;
   });
   h+=`</tbody></table></div>`;
   h+=renderPager(total, curPage, pageSize, 'invest');
@@ -2936,13 +2974,13 @@ function openInvModal(x){
     <div class="field"><label>关联项目</label>${projOptions('iv_proj', x?.proj)}</div>
     <div class="field half"><label>类型</label><select id="iv_type">${['进度款','计量','变更','索赔','预付款'].map(s=>`<option ${x?.type===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="field half"><label>状态</label><select id="iv_status">${['审查中','已签认','已支付'].map(s=>`<option ${x?.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
-    <div class="field"><label>内容说明</label><input id="iv_content" value="${esc(x?.content||'')}"></div>
+    <div class="field"><label>内容说明</label><input id="iv_content" value="${esc(x?.title||x?.content||'')}"></div>
     <div class="field half"><label>金额(¥)</label><input id="iv_amt" type="number" value="${x?.amount??0}"></div>
     <div class="field half"><label>凭证/审签号</label><input id="iv_cert" value="${esc(x?.cert||'')}"></div>
     <div class="field"><label>备注</label><textarea id="iv_note">${esc(x?.note||'')}</textarea></div>
     <button class="btn" style="width:100%" onclick="saveInv(${e?`'${x.id}'`:'null'})">保存</button>`);
 }
-function saveInv(id){ const inv=load(K.invest,[]); const d={proj:val('iv_proj'),type:val('iv_type'),status:val('iv_status'),content:val('iv_content'),amount:Number(val('iv_amt')||0),cert:val('iv_cert'),note:val('iv_note')};
+function saveInv(id){ const inv=load(K.invest,[]); const d={proj:val('iv_proj'),type:val('iv_type'),status:val('iv_status'),title:val('iv_content'),amount:Number(val('iv_amt')||0),cert:val('iv_cert'),note:val('iv_note')};
   if(id){ Object.assign(inv.find(x=>x.id===id),d); } else { inv.unshift({id:uid(),date:todayDisplay(),...d}); } save(K.invest,inv); closeModal(); toast('已保存'); render('invest'); }
 
 

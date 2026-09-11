@@ -3790,12 +3790,12 @@ function schemeHTML(){
     const curPage = Math.min(Math.max(1, window.__schemePage||1), totalPages);
     window.__schemePage = curPage;
     const pageRows = filtered.slice((curPage-1)*pageSize, curPage*pageSize);
-    h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>报审日期</th><th>方案名称</th><th>审核结论</th><th>操作</th></tr></thead><tbody>`;
+    h += `<div class="table-wrap"><table class="data-table"><thead><tr><th>报审日期</th><th>方案名称</th><th>审查结论</th><th>操作</th></tr></thead><tbody>`;
     pageRows.forEach(x => {
       h += `<tr>
         <td>${esc(x.date)}</td>
         <td>${esc(x.name||'')}</td>
-        <td style="color:${x.result==='通过'?'var(--green)':x.result==='修改后通过'?'var(--amber)':'var(--red)'};font-weight:600;">${esc(x.result||'')}</td>
+        <td style="color:${x.result==='不通过'?'var(--red)':'var(--green)'};font-weight:600;">${esc(x.result||'')}</td>
         <td><button class="btn sm" data-editscheme="${x.id}">编辑</button> <button class="btn sm secondary" data-delscheme="${x.id}">删除</button></td>
       </tr>`;
     });
@@ -3821,7 +3821,7 @@ function schemeFormHTML(x){
     <input type="hidden" id="scId" value="${x?x.id:''}">
     <div class="field"><label>报审日期</label><input id="scDate" type="date" value="${date}"></div>
     <div class="field"><label>方案名称</label><input id="scName" value="${name}" placeholder="如 深基坑支护专项施工方案"></div>
-    <div class="field"><label>审核结论</label><select id="scResult">${resultOpts}</select></div>
+    <div class="field"><label>审查结论</label><select id="scResult">${resultOpts}</select></div>
     <button class="btn" onclick="saveScheme()">${isEdit?'保存修改':'保存记录'}</button>`;
 }
 function editScheme(id){ const x=load(K.scheme,[]).find(i=>i.id===id); if(!x){toast('记录不存在');return;} showModal(schemeFormHTML(x)); }

@@ -1003,7 +1003,7 @@ const K = { proj:PREFIX+"projects", insp:PREFIX+"inspects", side:PREFIX+"sides",
   syncCfg:PREFIX+"sync_cfg", syncMeta:PREFIX+"sync_meta" };
 // 应用版本号（界面左下角展示）。发版时与 package.json 的 version 保持一致——
 // 原先这里在 HTML 里硬编码了 "v1.2.1"，之后一直忘了改，界面上显示的版本是错的。
-const APP_VERSION = '1.3.9';
+const APP_VERSION = '1.3.10';
 const todayDisplay = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 // 桌面环境（Electron）下走 fsBridge 文件持久化；网页版回退 localStorage
 const IS_DESKTOP = typeof window !== 'undefined' && !!window.fsBridge;
@@ -2671,8 +2671,8 @@ function sampleHTML(){
       const curPage = Math.min(Math.max(1, window.__smPage||1), totalPages);
       window.__smPage = curPage;
       const pageRows = smList.slice((curPage-1)*pageSize, curPage*pageSize);
-      h+=`<div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>分类</th><th>材料/试件</th><th>项目</th><th>规格</th><th>代表批量</th><th>取样数</th><th>取样时间</th><th>送样时间</th><th>状态</th><th>报告</th><th>操作</th></tr></thead><tbody>`;
-      pageRows.forEach(x=>{ h+=`<tr><td>${esc(x.cat||'-')}</td><td>${esc(x.name)}<br><span style="color:var(--sub);font-size:12px">${esc(x.position||'')}${x.position&&x.note?' · ':''}${esc(x.note||'')}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.spec||'')}</td><td>${esc(x.batch||'')}</td><td>${esc(x.qty||'')}</td><td>${esc(x.sampleDate||'-')}</td><td>${esc(x.sendDate||'-')}</td><td>${stPill(x.status)}</td><td>${esc(x.reportNo||'-')}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" data-rep="${x.id}">${x.status==='合格'?'已合格':'录报告'}</button><button class="btn sm ghost" data-esm="${x.id}">改</button><button class="btn sm danger" data-delsm="${x.id}">删</button></div></td></tr>`; });
+      h+=`<div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>分类</th><th>材料/试件</th><th>规格</th><th>代表批量</th><th>取样数</th><th>取样时间</th><th>送样时间</th><th>状态</th><th>报告</th><th>操作</th></tr></thead><tbody>`;
+      pageRows.forEach(x=>{ h+=`<tr><td>${esc(x.cat||'-')}</td><td>${esc(x.name)}<br><span style="color:var(--sub);font-size:12px">${esc(x.position||'')}${x.position&&x.note?' · ':''}${esc(x.note||'')}</span></td><td>${esc(x.spec||'')}</td><td>${esc(x.batch||'')}</td><td>${esc(x.qty||'')}</td><td>${esc(x.sampleDate||'-')}</td><td>${esc(x.sendDate||'-')}</td><td>${stPill(x.status)}</td><td>${esc(x.reportNo||'-')}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" data-rep="${x.id}">${x.status==='合格'?'已合格':'录报告'}</button><button class="btn sm ghost" data-esm="${x.id}">改</button><button class="btn sm danger" data-delsm="${x.id}">删</button></div></td></tr>`; });
       h+=`</tbody></table></div>`;
       h+=renderPager(total, curPage, pageSize, 'sample');
     }
@@ -2880,7 +2880,7 @@ function materialHTML(){
       window.__mtPage = curPage;
       const pageRows = filtered.slice((curPage-1)*pageSize, curPage*pageSize);
       h+=`<div class=\"table-wrap\"><table class=\"tbl mt-table\"><thead><tr>
-        <th style=\"width:48px\">序号</th><th>报审日期</th><th>项目</th><th>类别</th><th>材料名称</th><th>规格型号</th>
+        <th style=\"width:48px\">序号</th><th>报审日期</th><th>类别</th><th>材料名称</th><th>规格型号</th>
         <th>出厂合格证</th><th>检验报告</th><th>代表批量</th><th>验收</th><th>备注</th><th style=\"width:130px\">操作</th>
       </tr></thead><tbody>`;
       pageRows.forEach((x,i)=>{
@@ -2888,7 +2888,6 @@ function materialHTML(){
         h+=`<tr>
           <td>${(curPage-1)*pageSize+i+1}</td>
           <td>${esc(x.date||'')}</td>
-          <td>${esc(projName(x.proj))}</td>
           <td>${esc(x.category||'—')}</td>
           <td><b>${esc(x.name||'')}</b></td>
           <td>${esc(x.spec||'')}</td>
@@ -2984,7 +2983,10 @@ function buildMtLedgerHTML(opts){
 }
 function exportMtLedger(){
   const rows = mtFilteredRows();
-  const lines = ['材料/构配件报审复查台账','','序号\t材料名称\t规格型号\t出厂合格证\t检验报告\t代表批量\t报审日期\t备注'];
+  // 台账打印/导出必须带工程名称（表格里已去掉「项目」列，抬头是唯一的项目标识）
+  const p = load(K.proj,[])[0] || {};
+  const construction = unitName('施工单位') || (load(K.notice,[])[0]?.construction) || (p.construction) || '';
+  const lines = ['材料/构配件报审复查台账','工程名称：'+(p.name||'未设置'),'施工单位：'+(construction||'未设置'),'','序号\t材料名称\t规格型号\t出厂合格证\t检验报告\t代表批量\t报审日期\t备注'];
   rows.forEach((x,i)=>{ lines.push([i+1, x.name||'', x.spec||'', x.cert||'', x.report||'', x.batch||'', x.date||'', x.note||''].join('\t')); });
   download(lines.join('\n'), `材料台账_${todayDisplay()}.txt`);
   toast('已导出 '+rows.length+' 条台账');
@@ -3023,8 +3025,13 @@ function smLedgerRows(){
 function smLedgerMeta(rows){
   const sourceRows = rows.length ? rows : load(K.sample,[]);
   const projectNames = [...new Set(sourceRows.map(x=>projName(x.proj)).filter(x=>x && x!=='(未关联)'))];
+  // 台账打印必须带工程名称（表格里已去掉「项目」列，抬头是唯一的项目标识）。
+  // 记录为空或未关联项目时，回退到项目列表第一项 —— 每个项目一个独立数据库，列表里只会有一项。
+  const fallback = (load(K.proj,[])[0] || {}).name || '';
+  const projectName = projectNames.length===1 ? projectNames[0]
+    : (projectNames.length>1 ? '多个项目' : (fallback || '未设置'));
   return {
-    projectName: projectNames.length===1 ? projectNames[0] : (projectNames.length>1 ? '多个项目' : '未设置'),
+    projectName,
     constructionName: unitName('施工单位') || '未设置'
   };
 }
@@ -3100,9 +3107,9 @@ function progressHTML(){
   let h=`<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>进度计划与实际对比</div>`;
   h+=`<div class="btn-row"><button class="btn" id="addPr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>录入月度进度</button></div>`;
   if(pr.length===0) h+=`<div class="empty-hint">暂无进度数据</div>`;
-  h+=`<div class="card pr-table-wrap" style="padding:0;overflow:auto"><table><thead><tr><th>月份</th><th>项目</th><th>计划%</th><th>实际%</th><th>偏差</th><th>说明</th><th style="width:130px">操作</th></tr></thead><tbody>`;
+  h+=`<div class="card pr-table-wrap" style="padding:0;overflow:auto"><table><thead><tr><th>月份</th><th>计划%</th><th>实际%</th><th>偏差</th><th>说明</th><th style="width:130px">操作</th></tr></thead><tbody>`;
   pr.forEach(x=>{ const diff=Number(x.actual)-Number(x.plan); const col=diff<0?'var(--red)':(diff>0?'var(--green)':'var(--sub)');
-    h+=`<tr><td>${x.name||x.month}</td><td>${esc(projName(x.proj))}</td><td>${x.plan}</td><td>${x.actual}</td><td style="color:${col};font-weight:700">${diff>0?'+':''}${diff}%</td><td>${esc(x.note||'')}</td><td><div style="display:flex;gap:10px;flex-wrap:nowrap"><button class="btn sm ghost" data-ep="${x.id}">编辑</button><button class="btn sm danger" onclick="deleteItem('${K.progress}','${x.id}')">删</button></div></td></tr>`; });
+    h+=`<tr><td>${x.name||x.month}</td><td>${x.plan}</td><td>${x.actual}</td><td style="color:${col};font-weight:700">${diff>0?'+':''}${diff}%</td><td>${esc(x.note||'')}</td><td><div style="display:flex;gap:10px;flex-wrap:nowrap"><button class="btn sm ghost" data-ep="${x.id}">编辑</button><button class="btn sm danger" onclick="deleteItem('${K.progress}','${x.id}')">删</button></div></td></tr>`; });
   return h+`</tbody></table></div><div class="mtip">💡 偏差为负（实际＜计划）即进度滞后，需在监理月报中分析处置。</div>`;
 }
 function bindProgress(){ const pr=load(K.progress,[]); document.getElementById('addPr')?.addEventListener('click',()=>openPrModal(null)); document.querySelectorAll('[data-ep]').forEach(b=>b.onclick=()=>openPrModal(pr.find(i=>i.id===b.dataset.ep))); }
@@ -3158,11 +3165,11 @@ function investHTML(){
   const curPage = Math.min(Math.max(1, window.__invPage||1), totalPages);
   window.__invPage = curPage;
   const pageRows = filtList.slice((curPage-1)*pageSize, curPage*pageSize);
-  h+=`<div class="card" style="padding:0;overflow:auto"><table class="inv-table"><thead><tr><th>日期</th><th>类型</th><th>项目</th><th>内容</th><th style="text-align:right">金额(¥)</th><th>状态</th><th>凭证号</th><th>操作</th></tr></thead><tbody>`;
+  h+=`<div class="card" style="padding:0;overflow:auto"><table class="inv-table"><thead><tr><th>日期</th><th>类型</th><th>内容</th><th style="text-align:right">金额(¥)</th><th>状态</th><th>凭证号</th><th>操作</th></tr></thead><tbody>`;
   pageRows.forEach(x=>{
     const nextLabel = x.status==='审查中'?'签认':x.status==='已签认'?'支付':'重置';
     const op = PERM[ROLE].finance ? `<div style="display:flex;gap:6px;flex-wrap:nowrap"><button class="btn sm" data-ei="${x.id}">编辑</button><button class="btn sm ghost" data-si="${x.id}">${nextLabel}</button><button class="btn sm danger" onclick="deleteItem('${K.invest}','${x.id}')">删</button></div>` : '';
-    h+=`<tr><td>${esc(x.date)}</td><td><span class="pill">${esc(x.type)}</span></td><td>${esc(projName(x.proj))}</td><td>${esc(x.title||x.content||'')}</td><td style="text-align:right;font-weight:600">${Number(x.amount||0).toLocaleString()}</td><td>${stPill(x.status)}</td><td>${esc(x.cert||'')}</td><td>${op}</td></tr>`;
+    h+=`<tr><td>${esc(x.date)}</td><td><span class="pill">${esc(x.type)}</span></td><td>${esc(x.title||x.content||'')}</td><td style="text-align:right;font-weight:600">${Number(x.amount||0).toLocaleString()}</td><td>${stPill(x.status)}</td><td>${esc(x.cert||'')}</td><td>${op}</td></tr>`;
   });
   h+=`</tbody></table></div>`;
   h+=renderPager(total, curPage, pageSize, 'invest');
@@ -3704,10 +3711,10 @@ function planHTML(){
     const curPage = Math.min(Math.max(1, window.__planPage||1), totalPages);
     window.__planPage = curPage;
     const pageRows = list.slice((curPage-1)*pageSize, curPage*pageSize);
-    h+=`<div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>分类</th><th>名称</th><th>项目</th><th>编制人</th><th>日期</th><th>状态</th><th style="width:120px">操作</th></tr></thead><tbody>`;
+    h+=`<div class="card" style="padding:0;overflow:auto"><table><thead><tr><th>分类</th><th>名称</th><th>编制人</th><th>日期</th><th>状态</th><th style="width:120px">操作</th></tr></thead><tbody>`;
     pageRows.forEach(p=>{
       const tpl=getPlanTemplates().find(x=>x.key===p.tpl)||{name:p.tpl||'—'};
-      h+=`<tr><td>${esc(tpl.name)}</td><td>${esc(p.name||tpl.name)}</td><td>${esc(projName(p.proj))}</td><td>${esc(p.author||'—')}</td><td>${esc(p.date||'—')}</td><td>${planStatusPill(p.status)}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" onclick="editPlan('${p.id}')">编辑</button>${PERM[ROLE].addProj?`<button class="btn sm danger" onclick="delPlan('${p.id}')">删</button>`:''}</div></td></tr>`;
+      h+=`<tr><td>${esc(tpl.name)}</td><td>${esc(p.name||tpl.name)}</td><td>${esc(p.author||'—')}</td><td>${esc(p.date||'—')}</td><td>${planStatusPill(p.status)}</td><td><div style="display:flex;gap:8px;flex-wrap:nowrap"><button class="btn sm" onclick="editPlan('${p.id}')">编辑</button>${PERM[ROLE].addProj?`<button class="btn sm danger" onclick="delPlan('${p.id}')">删</button>`:''}</div></td></tr>`;
     });
     h+=`</tbody></table></div>`;
     h+=renderPager(total, curPage, pageSize, 'plan');
@@ -5216,10 +5223,10 @@ function formsHTML(){
   const recs=load(K.form,[]);
   if(recs.length){
     h+=`<div class="section-title" style="font-size:15px;margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>已填表单记录（${recs.length}）</div>`;
-    h+=`<div class="table-wrap"><table class="tbl"><thead><tr><th>表单</th><th>编号/标题</th><th>工程</th><th>日期</th><th>生成</th><th>操作</th></tr></thead><tbody>`;
+    h+=`<div class="table-wrap"><table class="tbl"><thead><tr><th>表单</th><th>编号/标题</th><th>日期</th><th>生成</th><th>操作</th></tr></thead><tbody>`;
     recs.forEach(r=>{
       const f=formById(r.formId);
-      h+=`<tr><td>${esc(f?f.title:r.formId)}</td><td>${esc(r.no||'—')}</td><td>${esc(projName(r.proj))}</td><td>${esc(r.date||'—')}</td>
+      h+=`<tr><td>${esc(f?f.title:r.formId)}</td><td>${esc(r.no||'—')}</td><td>${esc(r.date||'—')}</td>
         <td>${r.docx?`<span style="color:var(--green);font-weight:600">已生成</span>`:`<span style="color:var(--sub)">未生成</span>`}</td>
         <td><button class="btn sm" onclick="viewForm('${r.id}')">查看</button>
         <button class="btn sm ghost" onclick="genFormDocx('${r.id}')">DOCX</button>

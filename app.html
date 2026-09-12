@@ -917,7 +917,7 @@ window.mammothReady = new Promise(function(resolve){
     <div class="nav-item" data-page="forms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6l2 2h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5z"/><path d="M9 3v3h6V3M8 12h8M8 16h5"/></svg>监理用表</div>
         <div class="nav-group">AI助手</div>
     <div class="nav-item" data-page="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>AI助手</div>
-    <div style="padding:10px 16px 4px;font-size:11px;color:var(--sub);opacity:.75;user-select:none">监理总控工作台 v1.2.1</div>
+    <div id="appVersionTag" style="padding:10px 16px 4px;font-size:11px;color:var(--sub);opacity:.75;user-select:none">监理总控工作台</div>
   </aside>
 
   <main class="main" id="main"></main>
@@ -1001,6 +1001,9 @@ const K = { proj:PREFIX+"projects", insp:PREFIX+"inspects", side:PREFIX+"sides",
   aiConfig:PREFIX+"ai_config", aiHistory:PREFIX+"ai_history",
   wcfg:PREFIX+"weather_cfg", wcache:PREFIX+"weather_cache",
   syncCfg:PREFIX+"sync_cfg", syncMeta:PREFIX+"sync_meta" };
+// 应用版本号（界面左下角展示）。发版时与 package.json 的 version 保持一致——
+// 原先这里在 HTML 里硬编码了 "v1.2.1"，之后一直忘了改，界面上显示的版本是错的。
+const APP_VERSION = '1.3.9';
 const todayDisplay = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 // 桌面环境（Electron）下走 fsBridge 文件持久化；网页版回退 localStorage
 const IS_DESKTOP = typeof window !== 'undefined' && !!window.fsBridge;
@@ -1941,19 +1944,236 @@ function quickStatsHTML(){
 let _overviewCharts = {};
 function disposeOverviewCharts(){ Object.keys(_overviewCharts).forEach(k=>{ try{_overviewCharts[k].dispose();}catch(e){} delete _overviewCharts[k]; }); }
 
+/* ============================================================
+   总览统计口径 —— 唯一定义处
+   ------------------------------------------------------------
+   为什么集中放在这里：总览页「本月台账总数」「待处理问题」两张卡
+   原先各自内联了一套统计公式，而且卡片数字与下方列表用的规则还不一样，
+   导致卡片显示 26、列表只有 2 条这类永远对不上的情况。
+   现在卡片与列表共用本区块的同一份结果，口径与 iOS 端 TodoEngine 对齐。
+
+   以下规则均经过真实数据复算确认，改动前请先读注释。
+   ============================================================ */
+
+/// 台账模块清单：[数据键, 业务日期字段（按优先级）]。
+///
+/// 为什么要逐模块声明日期字段，而不是用「date || createdAt || ...」通用顺序猜：
+/// 各模块的业务日期字段命名不同，且有的根本不在顶层——
+///   · 见证取样：业务日期是「取样日期 sampleDate」，而 date 是录入日
+///     （实测 34 条里 14 条两者不一致，用 date 统计会把记录归错月份）
+///   · 进度对比：只有「月份 month」（如 2026-08），没有 date
+///   · 例会纪要：会议时间存在 fields 数组里，见 bizDate()
+/// 顺序即优先级，靠后的用于兼容历史数据。
+const LEDGER_MODULES = [
+  ['insp',     ['date']],                // 巡视检查
+  ['side',     ['date']],                // 旁站记录
+  ['check',    ['date']],                // 检查验收
+  ['material', ['date']],                // 材料进场
+  ['machine',  ['date']],                // 机械设备
+  ['sample',   ['sampleDate', 'date']],  // 见证取样 → 取样日期优先
+  ['special',  ['date']],                // 特种作业
+  ['progress', ['month', 'date']],       // 进度对比 → 月份
+  ['invest',   ['date']],                // 投资监理
+  ['plan',     ['date']],                // 监理规划
+  ['log',      ['date']],                // 监理日志
+  ['meeting',  ['date', 'createdAt']],   // 例会纪要 → 见 bizDate() 特例
+  ['notice',   ['date']],                // 监理通知单
+  ['letter',   ['date', 'sendDate']],    // 来往函件 / 工作联系单
+  ['scheme',   ['date']],                // 方案审查
+  ['form',     ['date']]                 // 监理用表
+];
+
+/// 解析业务日期字符串。支持 2026-09-08 / 2026-09 / 2026/9/8 / 2026年9月8日。
+///
+/// 用「本地时区构造 Date」而不是 new Date("2026-09-08")：后者按 UTC 零点解析，
+/// 在 UTC+8 以外的机器上会算成前一天，跨月时会归错月份。
+function parseBizDate(ds){
+  if(ds === null || ds === undefined || ds === '') return null;
+  const m = String(ds).trim().match(/^(\d{4})[-\/年](\d{1,2})(?:[-\/月](\d{1,2}))?/);
+  if(!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3] || 1));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/// 业务日期是否落在指定年月。
+function inMonthOf(ds, y, m){
+  const d = parseBizDate(ds);
+  return !!d && d.getFullYear() === y && d.getMonth() === m;
+}
+
+/// 取一条记录的业务日期字符串。
+function bizDate(modKey, r){
+  if(!r) return '';
+  if(modKey === 'meeting'){
+    // 例会纪要：会议时间存在 fields 数组里（{key:'会议时间', value:'2026-09-03'}）。
+    // 服务器同步回来的记录 fields 是纯文本，此时回退 createdAt。
+    if(Array.isArray(r.fields)){
+      const f = r.fields.find(x => x && x.key === '会议时间' && x.value);
+      if(f) return f.value;
+    }
+    return r.date || r.createdAt || '';
+  }
+  const mod = LEDGER_MODULES.find(m => m[0] === modKey);
+  for(const k of (mod ? mod[1] : ['date'])){ if(r[k]) return r[k]; }
+  return r.createdAt || '';
+}
+
+/// 本月台账总数 / 上月同期，遍历**全部**台账模块。
+///
+/// 旧实现硬编码了 11 个模块，漏掉监理日志、进度对比、投资监理、监理规划、监理用表——
+/// 用户在本月新增这些记录时「本月台账总数」不会变化。
+function monthLedgerCounts(){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const lm = new Date(y, m - 1, 1), ly = lm.getFullYear(), lmm = lm.getMonth();
+  let cur = 0, prev = 0;
+  LEDGER_MODULES.forEach(([key]) => {
+    load(K[key], []).forEach(r => {
+      const ds = bizDate(key, r);
+      if(inMonthOf(ds, y, m)) cur++;
+      else if(inMonthOf(ds, ly, lmm)) prev++;
+    });
+  });
+  return { cur, prev };
+}
+
+/// 待处理问题（唯一口径）——卡片数字与下方列表都由本函数产出，二者永远一致。
+///
+/// 与旧实现的三处关键差异：
+///  1) 见证取样：原来 `status !== '合格'` 一律算问题，于是「已取样」「已送检」全部计入
+///     （实测 23 条，占了 26 的绝大部分）。但这两个状态是在等试验报告，不是待处理问题。
+///     现在只算「不合格」，以及「已取样满 26 天仍未送检」的混凝土试块（与 iOS 一致）。
+///  2) 例会纪要：原来本月每开一次会就 +1 个问题。例会纪要不是问题，已整体剔除。
+///  3) 旧卡片按「本月」过滤、旧列表按「是否已处理」过滤，两套规则互不相干；
+///     现在统一走本函数。
+function buildPendingItems(){
+  const insp = load(K.insp, []), side = load(K.side, []), check = load(K.check, []),
+        material = load(K.material, []), machine = load(K.machine, []),
+        sample = load(K.sample, []), invest = load(K.invest, []),
+        scheme = load(K.scheme, []), notice = load(K.notice, []), letter = load(K.letter, []);
+  const today = todayDisplay();
+  const items = [];
+  const push = o => { items.push(o); };
+
+  // 1) 巡视检查：未闭环
+  insp.forEach(x => {
+    if(x.status === '已处理') return;
+    push({ key:'insp:'+x.id, tag:'整改', over: !!x.due && x.due < today,
+      title: x.problem || '巡视检查问题',
+      meta: `${projName(x.proj)} · ${x.spot||''} · 期限 ${x.due||'—'} · ${x.level||''}`,
+      page:'inspect', rid:x.id, color:'#ff8a5c', date: bizDate('insp', x) });
+  });
+
+  // 2) 旁站记录：发现问题
+  side.forEach(x => {
+    const ab = (x.abnormal || '').trim();
+    if(!ab || ab === '无' || ab === '无异常' || ab === '正常') return;
+    push({ key:'side:'+x.id, tag:'旁站异常', over:false,
+      title: (x.spot || '') + ' 旁站异常',
+      meta: `${projName(x.proj)} · ${x.date||''} · ${ab}`,
+      page:'side', rid:x.id, color:'#7c5cff', date: bizDate('side', x) });
+  });
+
+  // 3) 检查验收：不合格 / 待验收
+  check.forEach(x => {
+    const r = (x.result || '').trim();
+    if(r !== '不合格' && r !== '待验收') return;
+    push({ key:'check:'+x.id, tag:'验收不合格', over:false,
+      title: `${x.type||'检查'}验收：${x.content||''}`,
+      meta: `${x.part||''} · ${x.date||''} · ${r}`,
+      page:'check', rid:x.id, color:'#ef4444', date: bizDate('check', x) });
+  });
+
+  // 4) 材料进场：未出验收结论 / 待验收 / 验收不合格
+  material.forEach(x => {
+    const a = (x.accept || '').trim();
+    if(a && a !== '验收不合格' && !a.includes('待')) return;
+    push({ key:'material:'+x.id, tag: a === '验收不合格' ? '验收不合格' : '待验收', over:false,
+      title: `${x.name||'材料'} ${x.spec||''}`.trim(),
+      meta: `${x.category||''} · 批次 ${x.batch||'—'} · ${x.date||''}`,
+      page:'material', rid:x.id, color:'#22d3a6', date: bizDate('material', x) });
+  });
+
+  // 5) 机械设备：不合格
+  machine.forEach(x => {
+    if((x.result || '').trim() !== '不合格') return;
+    push({ key:'machine:'+x.id, tag:'机械不合格', over:false,
+      title: (x.name||'机械设备') + ' 验收不合格',
+      meta: `${x.cert||'无证号'} · ${x.date||''}`,
+      page:'machine', rid:x.id, color:'#ef4444', date: bizDate('machine', x) });
+  });
+
+  // 6) 见证取样：不合格，或已取样满 26 天仍未送检的混凝土试块
+  sample.forEach(x => {
+    const st = (x.status || '').trim();
+    if(st === '合格' || st === '已送检') return;
+    if(st === '不合格'){
+      push({ key:'sample:'+x.id, tag:'取样不合格', over:false,
+        title: `${x.name||'试样'} 不合格`,
+        meta: `${x.position||''} · ${x.spec||''} · ${x.sampleDate||''}`,
+        page:'sample', rid:x.id, color:'#ef4444', date: bizDate('sample', x) });
+      return;
+    }
+    if(st === '已取样'){
+      const isConcrete = (x.cat || '').includes('混凝土') || (x.name || '').includes('混凝土');
+      if(!isConcrete) return;
+      const sd = parseBizDate(x.sampleDate);
+      if(!sd) return;
+      const remind = new Date(sd.getTime());
+      remind.setDate(remind.getDate() + 26);
+      if(remind > new Date()) return;   // 未到提醒日
+      push({ key:'sample:'+x.id, tag:'送检提醒', over: remind < new Date(),
+        title: `${x.name||'试样'} 取样已满 26 天未送检`,
+        meta: `${x.position||''} · 取样 ${x.sampleDate||''}`,
+        page:'sample', rid:x.id, color:'#f59e0b', date: bizDate('sample', x) });
+    }
+  });
+
+  // 7) 投资监理：审查中
+  invest.forEach(x => {
+    if(x.status !== '审查中') return;
+    push({ key:'invest:'+x.id, tag:'投资审查', over:false,
+      title: `${x.type||''}: ${x.title || x.content || ''}`,
+      meta: `${projName(x.proj)} · ¥${Number(x.amount||0).toLocaleString()} · ${x.status}`,
+      page:'invest', rid:x.id, color:'#22d3a6', date: bizDate('invest', x) });
+  });
+
+  // 8) 方案审查：不通过（「修改后通过」= 已通过，不计）
+  scheme.forEach(x => {
+    if((x.result || '').trim() !== '不通过') return;
+    push({ key:'scheme:'+x.id, tag:'方案不通过', over:false,
+      title: (x.name||'方案') + ' 审查不通过',
+      meta: `${x.date||''} · 审查结论 不通过`,
+      page:'scheme', rid:x.id, color:'#ef4444', date: bizDate('scheme', x) });
+  });
+
+  // 9) 监理通知单：未签发（尚未生成 DOCX）
+  notice.forEach(x => {
+    if(x.docx) return;
+    push({ key:'notice:'+x.id, tag:'待签发', over:false,
+      title: x.subject || '监理通知单待签发',
+      meta: `${x.no||''} · ${x.construction||''} · ${x.date||''}`,
+      page:'notice', rid:x.id, color:'#2bb3ff', date: bizDate('notice', x) });
+  });
+
+  // 10) 来往函件：未回复（工作联系单不要求回函）
+  letter.forEach(x => {
+    if(x.status !== '未回复' || x.type === '工作联系单') return;
+    push({ key:'letter:'+x.id, tag:'待回函', over:true,
+      title: `${x.type||'函件'}: ${x.subject||''}`,
+      meta: `${projName(x.proj)} · ${x.no||''} · ${x.date||''} · 未回复`,
+      page:'letter', rid:x.id, color:'#ef4444', date: bizDate('letter', x) });
+  });
+
+  // 与「今日待处理」页保持联动：在那边标记过的项不再重复出现
+  const go = loadTodoGo();
+  items.forEach(it => { it.done = isTodoDone(it.key); it.visited = !!go[it.key]; });
+  return items.filter(it => !it.done);
+}
+
 function overviewHTML(){
   const proj = load(K.proj,[])[0] || {name:'北星小学东校区二期扩建工程', progress:62, status:'在监', planDate:'2027-06-30'};
-  const insp = load(K.insp,[]); const side = load(K.side,[]); const sample = load(K.sample,[]);
-  const material = load(K.material,[]); const invest = load(K.invest,[]); const check = load(K.check,[]);
-  const machine = load(K.machine,[]); const special = load(K.special,[]); const scheme = load(K.scheme,[]);
-  const meeting = load(K.meeting,[]); const letter = load(K.letter,[]); const notice = load(K.notice,[]);
-
-  const inspOpen = insp.filter(x=>x.status!=="已处理").length;
-  const inspDanger = insp.filter(x=>x.level==="严重"||x.level==="重大").length;
-  const sampleWait = sample.filter(x=>x.status!=="合格").length;
-  const noticeOpen = notice.filter(x=>!x.docx).length;
-  const letterWait = letter.filter(x=>x.status==="未回复"&&x.type!=="工作联系单").length;
-  const meetingTodo = meeting.length;
+  const invest = load(K.invest,[]);
   const investSigned = invest.filter(x=>x.type!=="预付款"&&(x.status==="已签认"||x.status==="已支付")).reduce((s,x)=>s+Number(x.amount||0),0);
   const contractTotal = getContractTotal();
   const investRate = Math.min(100, (investSigned/contractTotal*100)).toFixed(1);
@@ -1962,51 +2182,28 @@ function overviewHTML(){
   const now = new Date();
   const timeStr = `${now.getFullYear()}年${String(now.getMonth()+1).padStart(2,'0')}月${String(now.getDate()).padStart(2,'0')}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-  // 顶部4卡 —— 按本月真实统计 + 真实环比
+  // 顶部4卡 —— 口径见文件上方「总览统计口径」区块，卡片与下方列表共用同一份结果
   const now2 = new Date();
   const thisYear = now2.getFullYear(), thisMonth = now2.getMonth();
   const lastMonthDate = new Date(thisYear, thisMonth - 1, 1);
   const lastYear = lastMonthDate.getFullYear(), lastMonth = lastMonthDate.getMonth();
-  const inMonth = (ds, y, m) => {
-    if(!ds) return false;
-    const d = new Date(String(ds).replace(new RegExp('/','g'), '-'));
-    return !isNaN(d) && d.getFullYear()===y && d.getMonth()===m;
-  };
-  const recDate = (r) => r.date || r.createdAt || r.sampleDate || r.sendDate || '';
-  const cntThis = (arr) => arr.filter(r => inMonth(recDate(r), thisYear, thisMonth)).length;
-  const cntLast = (arr) => arr.filter(r => inMonth(recDate(r), lastYear, lastMonth)).length;
-  const totalCount = cntThis(insp)+cntThis(side)+cntThis(sample)+cntThis(material)+cntThis(check)+cntThis(machine)+cntThis(special)+cntThis(scheme)+cntThis(meeting)+cntThis(letter)+cntThis(notice);
-  const totalCountLast = cntLast(insp)+cntLast(side)+cntLast(sample)+cntLast(material)+cntLast(check)+cntLast(machine)+cntLast(special)+cntLast(scheme)+cntLast(meeting)+cntLast(letter)+cntLast(notice);
-  const pendingThis = insp.filter(r=>r.status!=="已处理"&&inMonth(recDate(r),thisYear,thisMonth)).length
-    + letter.filter(r=>r.status==="未回复"&&r.type!=="工作联系单"&&inMonth(recDate(r),thisYear,thisMonth)).length
-    + notice.filter(r=>!r.docx&&inMonth(recDate(r),thisYear,thisMonth)).length
-    + meeting.filter(r=>inMonth(recDate(r),thisYear,thisMonth)).length
-    + sample.filter(r=>r.status!=="合格"&&inMonth(recDate(r),thisYear,thisMonth)).length;
-  const pendingLast = insp.filter(r=>r.status!=="已处理"&&inMonth(recDate(r),lastYear,lastMonth)).length
-    + letter.filter(r=>r.status==="未回复"&&r.type!=="工作联系单"&&inMonth(recDate(r),lastYear,lastMonth)).length
-    + notice.filter(r=>!r.docx&&inMonth(recDate(r),lastYear,lastMonth)).length
-    + meeting.filter(r=>inMonth(recDate(r),lastYear,lastMonth)).length
-    + sample.filter(r=>r.status!=="合格"&&inMonth(recDate(r),lastYear,lastMonth)).length;
-  const pendingCount = pendingThis;
-  const noticeThis = cntThis(notice);
-  const noticeLast = cntLast(notice);
-  const aiCalls = Number(load('ai:monthCalls', 0));
-  const deltaTotal = totalCount - totalCountLast;
-  const deltaPending = pendingThis - pendingLast;
-  const deltaNotice = noticeThis - noticeLast;
 
-  // 待处理问题列表（复用 buildToday 逻辑）
-  const st = loadTodoState(); const go = loadTodoGo();
-  let pendingItems=[];
-  insp.forEach(x=>{ if(x.status==="已处理")return; const od=x.due<todayDisplay();
-    pendingItems.push({key:"insp:"+x.id, tag:"整改",over:od,title:x.problem,meta:`${projName(x.proj)} · ${x.spot} · 期限 ${x.due} · ${x.level}`,page:"inspect",rid:x.id,color:"#ff8a5c"}); });
-  side.forEach(x=>{ if(x.abnormal==="无"||!x.abnormal)return;
-    pendingItems.push({key:"side:"+x.id, tag:"旁站异常",over:false,title:x.spot+" 旁站异常",meta:`${projName(x.proj)} · ${x.date} · ${x.abnormal}`,page:"side",rid:x.id,color:"#7c5cff"}); });
-  invest.forEach(x=>{ if(x.status==="审查中") pendingItems.push({key:"invest:"+x.id, tag:"投资审查",over:false,title:x.type+": "+x.title||x.content,meta:`${projName(x.proj)} · ¥${Number(x.amount).toLocaleString()} · ${x.status}`,page:"invest",rid:x.id,color:"#22d3a6"}); });
-  letter.forEach(x=>{ if(x.status==="未回复"&&x.type!=="工作联系单") pendingItems.push({key:"letter:"+x.id, tag:"待回函",over:true,title:x.type+": "+x.subject,meta:`${projName(x.proj)} · ${x.no||''} · ${x.date} · 未回复`,page:"letter",rid:x.id,color:"#ef4444"}); });
-  meeting.forEach(x=>{ const f=(Array.isArray(x.fields)?x.fields:[]).find(f=>f.key==='待办事项' && (f.value||'').trim()); if(f) pendingItems.push({key:"meeting:"+x.id, tag:"例会待办",over:false,title:(x.title||'例会清单')+" 有待办",meta:`${f.value.slice(0,40)}`,page:"meeting",rid:x.id,color:"#2bb3ff"}); });
-  pendingItems.forEach(it=>{ it.done = isTodoDone(it.key); it.visited = !!go[it.key]; });
-  const pending = pendingItems.filter(it=>!it.done).sort((a,b)=> (b.over?1:0)-(a.over?1:0));
+  const ledgerCounts = monthLedgerCounts();
+  const totalCount = ledgerCounts.cur;
+  const totalCountLast = ledgerCounts.prev;
+  const deltaTotal = totalCount - totalCountLast;
+
+  // 待处理问题：卡片数字 = 下方列表条数。二者来自同一次 buildPendingItems()，
+  // 不再像以前那样各算一套公式（那会让卡片显示 26、列表只有 2 条）。
+  const pending = buildPendingItems().sort((a,b)=> (b.over?1:0)-(a.over?1:0));
+  const pendingCount = pending.length;
+  // 副行：当前未闭环的问题里，本月新产生的条数
+  const pendingNewThisMonth = pending.filter(it => inMonthOf(it.date, thisYear, thisMonth)).length;
+
+  const noticeThis = load(K.notice,[]).filter(r=>inMonthOf(bizDate('notice',r), thisYear, thisMonth)).length;
+  const noticeLast = load(K.notice,[]).filter(r=>inMonthOf(bizDate('notice',r), lastYear, lastMonth)).length;
+  const deltaNotice = noticeThis - noticeLast;
+  const aiCalls = Number(load('ai:monthCalls', 0));
 
   const pendingHTML = pending.length === 0
     ? `<div class="today-empty" style="padding:24px 0;text-align:center;color:var(--ink-3)">🎉 暂无待处理事项，一切正常。</div>`
@@ -2044,7 +2241,7 @@ function overviewHTML(){
     <div class="stat-card reveal">
       <div class="stat-label">待处理问题</div>
       <div class="stat-value" style="color:${pendingCount>0?'#ef4444':'#22d3a6'}">${pendingCount}</div>
-      <div class="stat-delta ${deltaPending<=0?'up':'down'}">${deltaPending<=0?'+':'-'}${Math.abs(deltaPending)} 较上月</div>
+      <div class="stat-delta ${pendingNewThisMonth>0?'down':'up'}">${pendingNewThisMonth>0?'本月新增 '+pendingNewThisMonth:'本月无新增'}</div>
     </div>
     <div class="stat-card reveal">
       <div class="stat-label">已签发通知单</div>
@@ -5247,6 +5444,8 @@ window.editLog=editLog; window.updLog=updLog; window.delLog=delLog;
 /* ============ 启动 ============ */
 seed();
 initFsDir();
+const verTag = document.getElementById('appVersionTag');
+if(verTag) verTag.textContent = '监理总控工作台 v' + APP_VERSION;
 // 首屏：等 DOM 与布局就绪后再渲染总览，避免 ECharts 在容器尺寸为 0 时初始化（导致刷新即卡住/空白）
 function bootOverview(){
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', ()=>requestAnimationFrame(()=>render('overview')), {once:true}); }
@@ -5256,8 +5455,9 @@ bootOverview();
 // 击败 bfcache：从缓存恢复页面时，ECharts 仍持有旧 DOM 实例注册，会导致 re-init 抛“已初始化”而卡住。
 // 此处强制延迟重新渲染当前页，清空并重建图表。
 window.addEventListener('pageshow', (e)=>{ if(e.persisted){ const p=document.body.dataset.page||'overview'; setTimeout(()=>{ try{ render(p); }catch(_){} }, 80); } });
-const total = projList().length+load(K.insp,[]).length+load(K.side,[]).length+load(K.sample,[]).length+load(K.material,[]).length;
-if(total>=30){ toast('数据已积累'+total+'条，建议导出备份'); }
+// 备份提醒：累计条数按 LEDGER_MODULES 全量统计（原先只加了 5 个模块，会低估）
+const totalRecords = LEDGER_MODULES.reduce((s,[key])=>s+load(K[key],[]).length, 0);
+if(totalRecords>=30){ toast('数据已积累'+totalRecords+'条，建议导出备份'); }
 </script>
 </body>
 </html>

@@ -1667,6 +1667,22 @@ function formatWeather(d){
   return w;
 }
 function projName(id){ const p=load(K.proj,[]).find(x=>x.id===id); return p?p.name:'(未关联)'; }
+/* 当前项目名称 —— 每个项目一份独立数据库，切换项目即切换整套数据，K.proj 里通常只有一项 */
+function curProjName(){ const p=load(K.proj,[])[0]; return p?p.name:''; }
+/* 一条记录应显示的工程名称：记录上存的名字 → 按 proj 反查 → 回退到当前项目。
+   ⚠️ 不要写成 `r.projName || projName(r.proj) || 默认值`：
+   projName() 查不到时返回字符串 '(未关联)'，它是**真值**，会把 || 链截断，
+   于是永远回退不到后面的默认值 —— 表单/单据里就会显示「(未关联)」。 */
+function recProjName(r){
+  if(r){
+    // 旧版本 saveContact 会把 '(未关联)' 当名字存进记录，要视同「未设置」，
+    // 否则历史数据永远显示不出工程名称
+    if(r.projName && r.projName!=='(未关联)') return r.projName;
+    const hit=load(K.proj,[]).find(p=>p.id===r.proj);
+    if(hit) return hit.name;
+  }
+  return curProjName() || '(未关联)';
+}
 function projList(){ return load(K.proj,[]); }
 function statusBadge(s){ const m={"在监":'b-monitor',"竣工":'b-done',"暂停":'b-pause'}; return `<span class="badge ${m[s]||''}">${s}</span>`; }
 function inspBadge(s){ const m={"待整改":'red',"整改中":'amber',"已处理":'green'}; return `<span class="pill ${m[s]||''}">${s}</span>`; }
@@ -3734,7 +3750,7 @@ function bindPlan(){
   });
   document.getElementById('expPlan')?.addEventListener('click',()=>{
     const l=load(K.plan,[]); if(!l.length){toast('暂无记录');return;}
-    download(l.map(p=>{const t=getPlanTemplates().find(x=>x.key===p.tpl);return (p.name||t?t.name:p.tpl)+'｜'+projName(p.proj)+'｜'+(p.author||'—')+'｜'+(p.date||'—')+'｜'+p.status;}).join('\n'),`监理规划细则清单_${todayDisplay()}.txt`);
+    download(l.map(p=>{const t=getPlanTemplates().find(x=>x.key===p.tpl);return (p.name||t?t.name:p.tpl)+'｜'+recProjName(p)+'｜'+(p.author||'—')+'｜'+(p.date||'—')+'｜'+p.status;}).join('\n'),`监理规划细则清单_${todayDisplay()}.txt`);
   });
   bindPager('plan', (p)=>{ window.__planPage=p; render('plan'); });
 }
@@ -4839,7 +4855,7 @@ function viewLetter(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) re
   const isContact = l.type==='工作联系单';
   const st = isContact ? '不需要回复' : (l.status||'未回复');
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>${esc(l.no||l.type)} · ${esc(st)}</h3>
-    <div class="logbox">项目：${projName(l.proj)}\n类型：${l.type}\n方向：${l.dir}\n日期：${l.date}\n事由：${l.subject}\n状态：${st}${isContact?'（工作联系单无需回复）':''}\n摘要：${l.note||'—'}</div>
+    <div class="logbox">项目：${recProjName(l)}\n类型：${l.type}\n方向：${l.dir}\n日期：${l.date}\n事由：${l.subject}\n状态：${st}${isContact?'（工作联系单无需回复）':''}\n摘要：${l.note||'—'}</div>
     <div class="btn-row" style="margin-top:10px">
       ${isContact?'':`<div class="field" style="flex:1"><label>状态</label><select id="lStatus2"><option ${st==='未回复'?'selected':''}>未回复</option><option ${st==='处理中'?'selected':''}>处理中</option><option ${st==='已回复'?'selected':''}>已回复</option><option ${l.status==='不需要回复'?'selected':''}>不需要回复</option></select></div>
       <button class="btn" onclick="updLetter('${l.id}')">保存</button>`}</div>`);
@@ -4877,13 +4893,12 @@ function contactHTML(){
   return h;
 }
 function contactForm(l){
-  const p = load(K.proj,[])[0] || {name:''};
   const isNew = !l;
   const d = l || {};
   return `<button class="close" onclick="closeModal()">×</button>
     <h3>${isNew?'新建':'编辑'}工作联系单</h3>
     <div class="contact-form">
-      <div class="field"><label>工程名称</label><input id="cProjName" value="${esc(d.projName || projName(d.proj) || p.name || '')}"></div>
+      <div class="field"><label>工程名称</label><input id="cProjName" value="${esc(recProjName(d))}"></div>
       <div class="field"><label>联系单编号</label><input id="cNo" placeholder="如 BX-LX-005" value="${esc(d.no||'')}"></div>
       <div class="field"><label>致（接收单位）</label><input id="cToUnit" placeholder="如 某建筑工程有限公司" value="${esc(d.toUnit || unitName('施工单位'))}"></div>
       <div class="field" style="grid-column:1/-1"><label>事由</label><input id="cSubject" placeholder="如 关于补充塔吊检测报告" value="${esc(d.subject||'')}"></div>
@@ -4905,7 +4920,10 @@ function bindContact(){
 }
 function editContact(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) return; showModal(contactForm(l)); }
 function saveContact(id){
-  const pName=val('cProjName')||projName(val('cProj'));
+  // 表单里没有项目下拉，工程名称框空着（或残留 '(未关联)'）就回退到当前项目。
+  // 不要写 projName(...)：查不到时它返回真值 '(未关联)'，会把回退链截断（见 recProjName 注释）。
+  const rawName=val('cProjName');
+  const pName=(rawName && rawName!=='(未关联)') ? rawName : (curProjName() || '(未关联)');
   const d={
     no:val('cNo'), type:'工作联系单', subject:val('cSubject'),
     toUnit:val('cToUnit'), signer:val('cSigner'),
@@ -4923,7 +4941,7 @@ function viewContact(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) r
   showModal(`<button class="close" onclick="closeModal()">×</button>
     <div class="contact-sheet">
       <h2 class="cs-title">工作联系单</h2>
-      <div class="cs-head"><span>工程名称：${esc(l.projName||projName(l.proj))}</span><span>编号：${esc(l.no||'')}</span></div>
+      <div class="cs-head"><span>工程名称：${esc(recProjName(l))}</span><span>编号：${esc(l.no||'')}</span></div>
       <div class="cs-to">致：${esc(l.toUnit||'')}：</div>
       <div class="cs-subject"><b>事由：</b>${esc(l.subject||'')}</div>
       <div class="cs-body">${esc(l.body||l.note||'').replace(/\n/g,'<br>')}</div>
@@ -4942,7 +4960,7 @@ function viewContact(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) r
 function genContactDocx(id){
   const l=load(K.letter,[]).find(x=>x.id===id); if(!l){ toast('请先保存记录'); return; }
   const data={
-    project_name: l.projName||projName(l.proj),
+    project_name: recProjName(l),
     no: l.no||'',
     toUnit: l.toUnit||'',
     subject: l.subject||'',
@@ -4973,7 +4991,7 @@ function printContact(id){ const l=load(K.letter,[]).find(x=>x.id===id); if(!l) 
     .foot{margin-top:32px;font-size:12px;color:#333;border-top:1px solid #999;padding-top:10px}
     </style></head><body>
     <div class="sheet"><h2>工作联系单</h2>
-    <div class="head"><span>工程名称：${esc(l.projName||projName(l.proj))}</span><span>编号：${esc(l.no||'')}</span></div>
+    <div class="head"><span>工程名称：${esc(recProjName(l))}</span><span>编号：${esc(l.no||'')}</span></div>
     <div class="to">致：${esc(l.toUnit||'')}：</div>
     <div class="subject"><b>事由：</b>${esc(l.subject||'')}</div>
     <div class="body">${esc(l.body||l.note||'').replace(/\n/g,'<br>')}</div>
@@ -5049,7 +5067,7 @@ function openNotice(id){
   const p0=load(K.proj,[])[0];
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>${n?'编辑':'新建'}监理通知单（质量/安全）</h3>
     <div class="field"><label>通知单编号</label><input id="nNo" placeholder="如 BX-TZ-013" value="${n?esc(n.no):''}"></div>
-    <div class="field"><label>工程名称</label><input id="nProj" value="${n?esc(projName(n.proj)):esc(cfg.project_name)}"></div>
+    <div class="field"><label>工程名称</label><input id="nProj" value="${n?esc(recProjName(n)):esc(cfg.project_name||curProjName())}"></div>
     <div class="field"><label>致（施工单位名称）</label><input id="nCons" value="${n?esc(n.construction):esc(cfg.construction_party)}"></div>
     <div class="field"><label>项目监理机构</label><input id="nSup" value="${n?esc(cfg.supervisor_name):esc(cfg.supervisor_name)}"></div>
     <div class="field"><label>总/专业监理工程师</label><input id="nEng" value="${n?esc(cfg.engineer_name):esc(cfg.engineer_name)}"></div>
@@ -5079,7 +5097,7 @@ function saveNotice(id){
 }
 function viewNotice(id){ const n=load(K.notice,[]).find(x=>x.id===id); if(!n) return;
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>${esc(n.no||'监理通知单（质量/安全）')} · ${n.date}</h3>
-    <div class="logbox">工程名称：${esc(projName(n.proj))}\n致：${esc(n.construction)}\n事由：${esc(n.subject)}\n日期：${n.date}　整改期限：${esc(n.deadline||'—')}\n\n【内容】\n${esc(n.body)}\n\n【要求】\n${esc(n.requirement||'—')}\n\n【规范依据】\n${esc(n.standards||'—')}</div>
+    <div class="logbox">工程名称：${esc(recProjName(n))}\n致：${esc(n.construction)}\n事由：${esc(n.subject)}\n日期：${n.date}　整改期限：${esc(n.deadline||'—')}\n\n【内容】\n${esc(n.body)}\n\n【要求】\n${esc(n.requirement||'—')}\n\n【规范依据】\n${esc(n.standards||'—')}</div>
     <div class="btn-row" style="margin-top:10px">
       <button class="btn" onclick="genNoticeDocx('${n.id}')">生成 DOCX</button>
       ${n.docx?`<button class="btn ghost" onclick="toast('文件路径：'+'${esc(n.docx)}')">查看路径</button>`:''}
@@ -5089,7 +5107,7 @@ function genNoticeDocx(id){
   const n=load(K.notice,[]).find(x=>x.id===id); if(!n){ toast('请先保存记录'); return; }
   const cfg=loadNoticeCfg();
   const data={
-    project_name: projName(n.proj)||cfg.project_name,
+    project_name: recProjName(n)||cfg.project_name,
     supervisor_name: cfg.supervisor_name,
     construction_party: n.construction||cfg.construction_party,
     engineer_name: cfg.engineer_name,
@@ -5268,14 +5286,14 @@ function viewForm(id){
   const f=formById(r.formId);
   let body=(f?f.fields:[]).map((fl,i)=>`${fl[0]}：\n${r.values[i]||'—'}`).join('\n\n');
   showModal(`<button class="close" onclick="closeModal()">×</button><h3>${esc(f?f.title:r.formId)} · ${r.date}</h3>
-    <div class="logbox">工程：${projName(r.proj)}\n日期：${r.date}\n\n${body}</div>
+    <div class="logbox">工程：${recProjName(r)}\n日期：${r.date}\n\n${body}</div>
     <div class="btn-row" style="margin-top:10px"><button class="btn" onclick="genFormDocx('${r.id}')">生成 DOCX</button></div>`);
 }
 function genFormDocx(id){
   const r=load(K.form,[]).find(x=>x.id===id); if(!r){ toast('请先保存记录'); return; }
   const f=formById(r.formId); if(!f) return;
   const fields=f.fields.map((fl,i)=>({label:fl[0], value:r.values[i]||"", span:fl[1]===2?2:1, multiline:!!fl[2]}));
-  const data={ title:f.title, subtitle:"", project:projName(r.proj), fields, sign:f.sign||[], note:f.note||"", date:r.date||todayDisplay() };
+  const data={ title:f.title, subtitle:"", project:recProjName(r), fields, sign:f.sign||[], note:f.note||"", date:r.date||todayDisplay() };
   const base="监理用表_"+f.id+"_"+ (r.date||"");
   const outName=base+".docx";
   // 纯前端生成：桌面版落盘并打开，网页版直接下载
